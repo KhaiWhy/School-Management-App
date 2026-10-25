@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+
+<html lang = "en">
+
+<head>
+    <meta charset = "utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel = "stylesheet" href = "home-style.css">
+
+    <header>
+        <img class = "profile" src="profile.png">
+        <h1 class = "header">MySchool</h1>
+        <p class = "border-bottom"></p>
+    </header>
+</head>
+
+<body>
+    <div class = "column left">
+
+    </div>
+
+    <div class = "column center">
+        <section class="announcements-section">
+  <h2 align = "center">Announcements</h2>
+
+  <!-- Input Form -->
+  <form id="announcementForm">
+    <input id = "title" placeholder = "Write your title here..." required></input>
+    <textarea id="textarea" placeholder="Write your announcement here..." required></textarea>
+    <button type="submit">Add Announcement</button>
+  </form>
+
+  <!-- Output Display Container -->
+  <div id="announcementsContainer"></div>
+</section>
+
+<script>
+  const form = document.getElementById('announcementForm');
+  const container = document.getElementById('announcementsContainer');
+
+  // 1. Load existing announcements from localStorage on page load
+  let announcements = JSON.parse(localStorage.getItem('announcements')) || [];
+  renderAnnouncements();
+
+  // 2. Handle form submission
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const title = document.getElementById('title').value;
+    const text = document.getElementById('textarea').value;
+    const date = new Date().toLocaleDateString();
+    const time = new Date().toLocaleTimeString();
+
+    // Create a new announcement object
+    const newAnnouncement = { title, text, date, time };
+
+    // Add to the beginning of our array and save to localStorage
+    announcements.unshift(newAnnouncement);
+    localStorage.setItem('announcements', JSON.stringify(announcements));
+
+    // Refresh the visible list and reset the form
+    renderAnnouncements();
+    form.reset();
+  });
+
+  // 3. Function to display announcements on the page
+  function renderAnnouncements() {
+    container.innerHTML = ''; // Clear container
+
+    announcements.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.className = 'announcement-card';
+      card.innerHTML = `
+        <h2><strong>${escapeHTML(item.title)}</strong></h2>
+        <p>${escapeHTML(item.text)}</p>
+        <small>${item.date}</small>
+        <small>${item.time}</small>
+        <button class="delete-btn" onclick="deleteAnnouncement(${index})">Delete</button>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // 4. Function to delete an announcement
+  window.deleteAnnouncement = function(index) {
+    announcements.splice(index, 1); // Remove item from array
+    localStorage.setItem('announcements', JSON.stringify(announcements)); // Update storage
+    renderAnnouncements(); // Refresh UI
+  }
+
+  // Helper function to prevent malicious code injection (XSS)
+  function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  }
+</script>
+</div>
+
+    <div class = "column right">
+
+    </div>
+</body>  
+
+
+</html>
