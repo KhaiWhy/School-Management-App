@@ -1,5 +1,13 @@
 <!DOCTYPE html>
 
+<!-- to-do next:
+1. make announcement text box line-break sensitive (E.g: when content contains lists) 
+2. make a simple login page with MySQL database to test verification of user credentials
+3. refine the design of the classrooms section
+4. learn how to make new HTML pages from making a new classroom
+5. make profile icon redirect to profile page (will start soon)
+-->
+
 <html lang = "en">
 
 <head>
@@ -29,7 +37,7 @@
 
   <!-- Input Form -->
   <form id="announcementForm">
-    <input id = "title" placeholder = "Write your title here..." required></input>
+    <input id="input" placeholder = "Write your title here..." required></input>
     <textarea id="textarea" placeholder="Write your announcement here..." required></textarea>
     <button type="submit">Add Announcement</button>
   </form>
@@ -44,13 +52,16 @@
 
   // 1. Load existing announcements from localStorage on page load
   let announcements = JSON.parse(localStorage.getItem('announcements')) || [];
+  let openMenuIndex = null;
+  let editingIndex = null;
+  let editingMode = null;
   renderAnnouncements();
 
   // 2. Handle form submission
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const title = document.getElementById('title').value;
+    const title = document.getElementById('input').value;
     const text = document.getElementById('textarea').value;
     const date = new Date().toLocaleDateString();
     const time = new Date().toLocaleTimeString();
@@ -61,6 +72,9 @@
     // Add to the beginning of our array and save to localStorage
     announcements.unshift(newAnnouncement);
     localStorage.setItem('announcements', JSON.stringify(announcements));
+    openMenuIndex = null;
+    editingIndex = null;
+    editingMode = null;
 
     // Refresh the visible list and reset the form
     renderAnnouncements();
@@ -69,35 +83,198 @@
 
   // 3. Function to display announcements on the page
   function renderAnnouncements() {
-    container.innerHTML = ''; // Clear container
+    container.replaceChildren();
 
     announcements.forEach((item, index) => {
       const card = document.createElement('div');
       card.className = 'announcement-card';
-      card.innerHTML = `
-        <h2><strong>${escapeHTML(item.title)}</strong></h2>
-        <p>${escapeHTML(item.text)}</p>
-        <small>${item.date}</small>
-        <small>${item.time}</small>
-        <button class="delete-btn" onclick="deleteAnnouncement(${index})">Delete</button>
-      `;
+      card.dataset.index = index;
+
+      if (editingIndex === index) {
+        const editForm = document.createElement('form');
+        editForm.className = 'announcement-edit-form';
+        editForm.dataset.mode = editingMode;
+
+        const titleLabel = document.createElement('label');
+        titleLabel.textContent = 'Title';
+        const titleInput = document.createElement('input');
+        titleInput.name = 'title';
+        titleInput.value = item.title;
+        titleInput.required = true;
+        titleLabel.appendChild(titleInput);
+        editForm.appendChild(titleLabel);
+
+        if (editingMode === 'edit') {
+          const textLabel = document.createElement('label');
+          textLabel.textContent = 'Announcement';
+          const textInput = document.createElement('textarea');
+          textInput.name = 'text';
+          textInput.value = item.text;
+          textInput.required = true;
+          textLabel.appendChild(textInput);
+          editForm.appendChild(textLabel);
+        }
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'submit';
+        saveButton.textContent = 'Save';
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.dataset.action = 'cancel-edit';
+        cancelButton.textContent = 'Cancel';
+        editForm.append(saveButton, cancelButton);
+        card.appendChild(editForm);
+      } else {
+        const title = document.createElement('h2');
+        title.textContent = item.title;
+        const text = document.createElement('p');
+        text.textContent = item.text;
+        const date = document.createElement('small');
+        date.textContent = item.date;
+        const time = document.createElement('small');
+        time.textContent = item.time;
+        card.append(title, text, date, " ", time);
+
+        if (item.editflag) {
+          const editedLabel = document.createElement('small');
+          editedLabel.className = 'italic';
+          editedLabel.textContent = ' (Edited)';
+          card.appendChild(editedLabel);
+        }
+
+        const moreButton = document.createElement('button');
+        moreButton.type = 'button';
+        moreButton.className = 'more-options-btn';
+        moreButton.dataset.action = 'toggle-menu';
+        moreButton.setAttribute('aria-label', `More options for ${item.title}`);
+        moreButton.setAttribute('aria-haspopup', 'true');
+        moreButton.setAttribute('aria-expanded', String(openMenuIndex === index));
+        moreButton.textContent = '⋮';
+
+        const menu = document.createElement('div');
+        menu.className = 'announcement-options';
+        menu.hidden = openMenuIndex !== index;
+        menu.setAttribute('role', 'menu');
+
+        [
+          { action: 'edit', label: 'Edit announcement' },
+          { action: 'delete', label: 'Delete', className: 'delete-option' }
+        ].forEach(({ action, label, className }) => {
+          const option = document.createElement('button');
+          option.type = 'button';
+          option.dataset.action = action;
+          option.setAttribute('role', 'menuitem');
+          option.textContent = label;
+          if (className) option.className = className;
+          menu.appendChild(option);
+        });
+
+        card.append(moreButton, menu);
+      }
+
       container.appendChild(card);
     });
   }
 
+  container.addEventListener('click', function (event) {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+
+    const card = button.closest('.announcement-card');
+    const index = Number(card.dataset.index);
+
+    switch (button.dataset.action) {
+      case 'toggle-menu':
+        openMenuIndex = openMenuIndex === index ? null : index;
+        renderAnnouncements();
+        if (openMenuIndex === index) {
+          container.querySelector(`[data-index="${index}"] [role="menuitem"]`).focus();
+        } else {
+          container.querySelector(`[data-index="${index}"] .more-options-btn`).focus();
+        }
+        break;
+      case 'edit':
+        editingIndex = index;
+        editingMode = button.dataset.action;
+        openMenuIndex = null;
+        renderAnnouncements();
+        container.querySelector(`[data-index="${index}"] input[name="title"]`).focus();
+        break;
+      case 'cancel-edit':
+        editingIndex = null;
+        editingMode = null;
+        renderAnnouncements();
+        break;
+      case 'delete':
+        deleteAnnouncement(index);
+        break;
+    }
+  });
+
+  container.addEventListener('keydown', function (event) {
+    if (openMenuIndex === null) return;
+
+    const menu = container.querySelector(`[data-index="${openMenuIndex}"] [role="menu"]`);
+    const options = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+    const currentIndex = options.indexOf(document.activeElement);
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      const index = openMenuIndex;
+      openMenuIndex = null;
+      renderAnnouncements();
+      container.querySelector(`[data-index="${index}"] .more-options-btn`).focus();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      const nextIndex = (currentIndex + direction + options.length) % options.length;
+      options[nextIndex].focus();
+    }
+  });
+
+  container.addEventListener('submit', function (event) {
+    if (!(event.target instanceof HTMLFormElement)) return;
+    const editForm = event.target.closest('.announcement-edit-form');
+    if (!editForm) return;
+    event.preventDefault();
+
+    const index = Number(editForm.closest('.announcement-card').dataset.index);
+    const titleInput = editForm.elements.title;
+    const title = titleInput.value.trim();
+    if (!title) {
+      titleInput.value = '';
+      titleInput.reportValidity();
+      return;
+    }
+
+    const textInput = editForm.elements.text;
+    const text = textInput ? textInput.value.trim() : announcements[index].text;
+    if (!text) {
+      textInput.value = '';
+      textInput.reportValidity();
+      return;
+    }
+
+    const TimeOfUpdate = new Date()
+    announcements[index] = {...announcements[index], title, text, date: TimeOfUpdate.toLocaleDateString(), time: TimeOfUpdate.toLocaleTimeString(), editflag};
+    localStorage.setItem('announcements', JSON.stringify(announcements));
+    editingIndex = null;
+    editingMode = null;
+    renderAnnouncements();
+  });
+
   // 4. Function to delete an announcement
   window.deleteAnnouncement = function(index) {
-    announcements.splice(index, 1); // Remove item from array
-    localStorage.setItem('announcements', JSON.stringify(announcements)); // Update storage
-    renderAnnouncements(); // Refresh UI
+    if (!Number.isInteger(index) || index < 0 || index >= announcements.length) return;
+    announcements.splice(index, 1);
+    localStorage.setItem('announcements', JSON.stringify(announcements));
+    openMenuIndex = null;
+    editingIndex = null;
+    editingMode = null;
+    renderAnnouncements();
   }
 
-  // Helper function to prevent malicious code injection (XSS)
-  function escapeHTML(str) {
-    return str.replace(/[&<>'"]/g, 
-      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-    );
-  }
     </script>
   </div>
 

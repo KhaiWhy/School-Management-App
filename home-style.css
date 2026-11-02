@@ -56,6 +56,10 @@
   }
 }
 
+.italic {
+  font-style: italic;
+}
+
 .announcements-section {
   max-width: 600px;
   margin: 20px auto;
@@ -69,8 +73,10 @@
   margin-bottom: 20px;
 }
 
-#announcementForm title,
-#announcementForm textarea {
+#announcementForm input,
+#announcementForm textarea,
+.announcement-edit-form input,
+.announcement-edit-form textarea {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -97,21 +103,92 @@
   border-radius: 4px;
 }
 
-.delete-btn {
+.more-options-btn {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: #dc3545;
-  color: white;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  color: #333;
   border: none;
-  padding: 5px 10px;
+  padding: 0;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
-.delete-btn:hover {
-  background: #c82333;
+.more-options-btn:hover,
+.more-options-btn:focus-visible {
+  background: #e8e8e8;
+}
+
+.announcement-options {
+  position: absolute;
+  z-index: 1;
+  top: 52px;
+  right: 15px;
+  display: flex;
+  min-width: 170px;
+  flex-direction: column;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+}
+
+.announcement-options[hidden] {
+  display: none;
+}
+
+.announcement-options button,
+.announcement-edit-form button {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #222;
+  text-align: left;
+  cursor: pointer;
+}
+
+.announcement-options button:hover,
+.announcement-edit-form button:hover {
+  background: #eee;
+}
+
+.announcement-options .delete-option {
+  color: #b4232f;
+}
+
+.announcement-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 35px;
+}
+
+.announcement-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.announcement-edit-form textarea {
+  field-sizing: content;
+  resize: none;
+}
+
+.announcement-edit-form button[type="submit"] {
+  background: #007bff;
+  color: #fff;
+  text-align: center;
+}
+
+.announcement-edit-form button[type="button"] {
+  text-align: center;
 }
 
 .classroom {
