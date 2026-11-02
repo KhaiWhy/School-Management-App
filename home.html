@@ -3,26 +3,29 @@
 <html lang = "en">
 
 <head>
-    <meta charset = "utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset = "utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel = "stylesheet" href = "home-style.css">
+  <link rel = "stylesheet" href = "home-style.css">
 
-    <header>
-        <img class = "profile" src="profile.png">
-        <h1 class = "header">Schooling</h1>
-        <p class = "border-bottom"></p>
-    </header>
+  <header>
+    <h1 class = "header">Schooling
+      <button class = "profile">
+        <img class = "profile-img" src="profile.png">
+      </button>
+    </h1>
+    <p class = "border-bottom"></p>
+  </header>
 </head>
 
 <body>
-    <div class = "column left">
+  <div class = "column left">
 
-    </div>
+  </div>
 
-    <div class = "column center">
-        <section class="announcements-section">
-  <h2 align = "center">Announcements</h2>
+  <div class = "column center">
+    <section class="announcements-section">
+    <h2 align = "center">Announcements</h2>
 
   <!-- Input Form -->
   <form id="announcementForm">
@@ -95,12 +98,17 @@
       tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
   }
-</script>
-</div>
+    </script>
+  </div>
 
-    <div class = "column right">
-
+  <div class = "column right">
+    <div class = "btn-list">
+      <button class = "classroom" onclick="window.location.href='home.html'">Home</button>
+      <button class = "classroom" onclick="window.location.href='classroom1.html'">Classroom 1</button>
+      <button class = "classroom" onclick="window.location.href='classroom2.html'">Classroom 2</button>
+      <button class = "classroom" onclick="window.location.href='classroom3.html'">Classroom 3</button>
     </div>
+  </div>
 </body>  
 
 
