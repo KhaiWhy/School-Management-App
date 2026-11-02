@@ -256,8 +256,15 @@
       return;
     }
 
-    const TimeOfUpdate = new Date()
-    announcements[index] = {...announcements[index], title, text, date: TimeOfUpdate.toLocaleDateString(), time: TimeOfUpdate.toLocaleTimeString(), editflag};
+    const TimeOfUpdate = new Date();
+    announcements[index] = {
+      ...announcements[index],
+      title,
+      text,
+      date: TimeOfUpdate.toLocaleDateString(),
+      time: TimeOfUpdate.toLocaleTimeString(),
+      editflag: true
+    };
     localStorage.setItem('announcements', JSON.stringify(announcements));
     editingIndex = null;
     editingMode = null;
