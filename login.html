@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!--you can use PHP or Python for this for more secure logins--> 
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Screen</title>
+
+<style>
+.design {
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+  align-items: center;
+
+.navbar {
+  display: flex;
+  position: sticky;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 1rem 5%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Logo styling */
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+    letter-spacing: 0.5px;
+}
+
+/* Links layout */
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #555555;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #3498db;
+}
+    
+</style>
+
+<header class = "navbar">
+  <div class="logo">[app logo]</div>
+</header>
+
+<div class = "design">
+  <h1>Welcome!</h1>
+  <br>
+  <button>Login</button>
+  <br>
+  <a href="home.html">Forgot Password?</a>
+</div>
+</head>
+
