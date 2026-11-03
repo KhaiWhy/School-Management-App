@@ -1,6 +1,8 @@
 import { type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
+import Avatar from '../components/Avatar';
+import Icon from '../components/Icon';
 import { Empty, ErrorNote, Loading } from '../components/ui';
 import { listMembers } from '../data/classes';
 import {
@@ -66,8 +68,9 @@ function FileButton({ submission }: { submission: Submission }) {
   if (!submission.file_path) return null;
   return (
     <>
-      <button type="button" className="link-button" onClick={() => action.run(() => openClassFile(submission.file_path!))}>
-        Open {submission.file_name ?? 'file'}
+      <button type="button" className="file-chip" onClick={() => action.run(() => openClassFile(submission.file_path!))}>
+        <Icon name="file" size={18} />
+        {submission.file_name ?? 'Open file'}
       </button>
       <ErrorNote error={action.error} />
     </>
@@ -176,9 +179,12 @@ function ClassSubmissions({ assignment }: { assignment: Assignment }) {
 
   return (
     <div>
-      <h2 className="section-title">
-        Submissions ({handedIn} of {data.members.length})
-      </h2>
+      <div className="stat-row">
+        <div className="stat"><strong className="tone-good">{handedIn}</strong><small>handed in</small></div>
+        <div className="stat"><strong className="tone-bad">{Math.max(0, data.members.length - handedIn)}</strong><small>not handed in</small></div>
+        <div className="stat"><strong className="tone-primary">{data.submissions.filter((s) => s.grade).length}</strong><small>graded</small></div>
+      </div>
+      <h2 className="section-title">Submissions</h2>
       <ErrorNote error={action.error} />
       {data.members.length === 0 ? (
         <Empty>No students in this class yet.</Empty>
@@ -189,7 +195,10 @@ function ClassSubmissions({ assignment }: { assignment: Assignment }) {
             return (
               <li key={profile.id} className="panel">
                 <div className="submission-head">
-                  <strong>{profile.full_name || profile.username}</strong>
+                  <span className="person">
+                    <Avatar name={profile.full_name || profile.username} />
+                    <strong>{profile.full_name || profile.username}</strong>
+                  </span>
                   <span className={`badge ${s ? (s.grade ? 'badge-good' : 'badge-neutral') : 'badge-bad'}`}>
                     {s ? (s.grade ? `Graded: ${s.grade}` : 'Handed in') : 'Not handed in'}
                   </span>

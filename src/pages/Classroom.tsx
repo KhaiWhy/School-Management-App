@@ -2,6 +2,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
 import Announcements from '../components/Announcements';
 import AssignmentList from '../components/AssignmentList';
+import Avatar from '../components/Avatar';
 import { useClasses } from '../components/Layout';
 import MaterialList from '../components/MaterialList';
 import { Empty, ErrorNote, Loading } from '../components/ui';
@@ -45,7 +46,7 @@ export default function Classroom() {
         </div>
         {teaches && (
           <p className="join-code">
-            Class code <strong>{room.join_code}</strong>
+            <span>Class code</span> <strong>{room.join_code}</strong>
           </p>
         )}
       </div>
@@ -122,8 +123,11 @@ function People({ room, teaches }: { room: ClassRoom; teaches: boolean }) {
         <ul className="people-list">
           {members.map(({ profile }) => (
             <li key={profile.id}>
-              <span>
-                {profile.full_name || profile.username} <small>@{profile.username}</small>
+              <span className="person">
+                <Avatar name={profile.full_name || profile.username} size={32} />
+                <span>
+                  {profile.full_name || profile.username} <small>@{profile.username}</small>
+                </span>
               </span>
               {teaches && (
                 <button type="button" className="btn btn-small" onClick={() => remove(profile.id, profile.full_name)}>

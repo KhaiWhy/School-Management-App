@@ -3,6 +3,7 @@ import { useUser } from '../auth/AuthContext';
 import * as api from '../data/announcements';
 import { confirmDelete, formatDateTime } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
+import Avatar from './Avatar';
 import { ErrorNote, Loading } from './ui';
 
 // Ported from legacy/home.html. classId null = whole school (home page), otherwise one class.
@@ -130,12 +131,15 @@ export default function Announcements({
       {canPost && (
         <form className="announcement-form" onSubmit={handleCreate}>
           <label className="visually-hidden" htmlFor={`${formId}-title`}>Title</label>
-          <input id={`${formId}-title`} name="title" placeholder="Write your title here..." maxLength={200} required />
+          <input id={`${formId}-title`} name="title" placeholder={classId ? 'Title for this class' : 'Write your title here...'} maxLength={200} required />
           <label className="visually-hidden" htmlFor={`${formId}-body`}>Announcement</label>
           <textarea id={`${formId}-body`} name="body" placeholder="Write your announcement here..." maxLength={10000} required />
-          <button type="submit" className="btn btn-primary" disabled={action.busy}>
-            {action.busy ? 'Posting…' : 'Add announcement'}
-          </button>
+          <div className="form-actions form-actions-end">
+            <button type="reset" className="btn btn-ghost">Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={action.busy}>
+              {action.busy ? 'Posting…' : 'Post announcement'}
+            </button>
+          </div>
         </form>
       )}
 
@@ -181,6 +185,7 @@ export default function Announcements({
                     <h3>{item.title}</h3>
                     <p className="announcement-text">{item.body}</p>
                     <small className="announcement-meta">
+                      {item.author?.full_name && <Avatar name={item.author.full_name} size={24} />}
                       {item.author?.full_name ? `${item.author.full_name} · ` : ''}
                       {formatDateTime(edited ? item.updated_at : item.created_at)}
                       {edited && <span className="italic"> (Edited)</span>}

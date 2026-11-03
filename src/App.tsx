@@ -13,6 +13,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Materials from './pages/Materials';
 import Messages from './pages/Messages';
+import More from './pages/More';
 import NotFound from './pages/NotFound';
 import People from './pages/People';
 import Profile from './pages/Profile';
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="attendance" element={<Attendance />} />
         <Route path="reports" element={<Reports />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="more" element={<More />} />
         <Route
           path="people"
           element={<RequireAuth roles={['admin']}><People /></RequireAuth>}

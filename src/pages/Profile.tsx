@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth, useUser } from '../auth/AuthContext';
+import Avatar from '../components/Avatar';
 import { ErrorNote, PageHeader } from '../components/ui';
+import { useTheme } from '../lib/theme';
+import { ThemePicker } from './More';
 import { updatePassword } from '../data/auth';
 import { updateMyProfile } from '../data/people';
 import { useAction } from '../lib/useLoad';
@@ -11,6 +14,7 @@ export default function Profile() {
   const details = useAction();
   const password = useAction();
   const [notice, setNotice] = useState<string | null>(null);
+  const { choice, setChoice } = useTheme();
 
   async function handleDetails(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +42,7 @@ export default function Profile() {
     <section className="page">
       <PageHeader title="Profile" />
       <div className="profile-card">
-        <img src="/profile.png" alt="" width="96" height="96" />
+        <Avatar name={user.full_name || user.username} size={72} />
         <dl>
           <dt>Name</dt>
           <dd>{user.full_name || '—'}</dd>
@@ -52,6 +56,12 @@ export default function Profile() {
       </div>
 
       {notice && <p className="notice" role="status">{notice}</p>}
+
+      <section className="panel">
+        <h2 className="panel-title">Appearance</h2>
+        <ThemePicker value={choice} onChange={setChoice} />
+        <p className="hint">System follows your device's light or dark setting.</p>
+      </section>
 
       <form className="panel stack" onSubmit={handleDetails}>
         <h2 className="panel-title">Your details</h2>

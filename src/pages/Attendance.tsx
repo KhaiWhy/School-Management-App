@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../auth/AuthContext';
+import Avatar from '../components/Avatar';
 import { ClassPicker, Empty, ErrorNote, Loading, PageHeader } from '../components/ui';
 import { listClassAttendance, listMyAttendance, saveAttendance } from '../data/attendance';
 import { listMembers } from '../data/classes';
@@ -79,7 +80,10 @@ function TakeRegister() {
           <ul className="register">
             {members.map(({ profile }) => (
               <li key={profile.id}>
-                <span className="register-name">{profile.full_name || profile.username}</span>
+                <span className="register-name">
+                  <Avatar name={profile.full_name || profile.username} size={32} />
+                  {profile.full_name || profile.username}
+                </span>
                 <fieldset className="status-picker">
                   <legend className="visually-hidden">Attendance for {profile.full_name}</legend>
                   {STATUSES.map((s) => (

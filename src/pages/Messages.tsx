@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
+import Avatar from '../components/Avatar';
 import Icon from '../components/Icon';
 import { Empty, ErrorNote, Loading } from '../components/ui';
 import { listRecentMessages, listThread, sendMessage, subscribeToMessages } from '../data/messages';
@@ -49,13 +50,16 @@ export default function Messages() {
       <div className="chat-list">
         <h1 className="page-title">Messages</h1>
         <label className="visually-hidden" htmlFor="people-search">Find someone</label>
-        <input
+        <div className="search-field">
+          <Icon name="search" size={18} />
+          <input
           id="people-search"
           type="search"
           placeholder="Find someone by name or username"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-        />
+          />
+        </div>
         <ul className="chat-people">
           {(term ? matches.map((p) => [p.id, undefined] as const) : conversations).map(([id, last]) => {
             const person = byId.get(id);
@@ -66,8 +70,11 @@ export default function Messages() {
                   className={id === userId ? 'chat-person is-active' : 'chat-person'}
                   onClick={() => setSearch('')}
                 >
-                  <strong>{person?.full_name || person?.username || 'Unknown'}</strong>
-                  <small>{last ? last.body : `@${person?.username ?? ''}`}</small>
+                  <Avatar name={person?.full_name || person?.username || '?'} size={40} />
+                  <span className="chat-person-text">
+                    <strong>{person?.full_name || person?.username || 'Unknown'}</strong>
+                    <small>{last ? last.body : `@${person?.username ?? ''}`}</small>
+                  </span>
                 </Link>
               </li>
             );
@@ -128,7 +135,10 @@ function Thread({ me, other, onBack }: { me: Profile; other: Profile; onBack: ()
   return (
     <>
       <div className="chat-head">
-        <button type="button" className="btn btn-small chat-back" onClick={onBack}>Back</button>
+        <button type="button" className="icon-button chat-back" onClick={onBack} aria-label="Back to conversations">
+          <Icon name="back" />
+        </button>
+        <Avatar name={other.full_name || other.username} />
         <div>
           <strong>{other.full_name || other.username}</strong>
           <small> @{other.username}</small>

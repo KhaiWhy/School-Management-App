@@ -4,8 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Schooling: assignments, announcements, attendance, timetable and more for your school, all in one app." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121A2B" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" href="/profile.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+    />
     <title>Schooling</title>
+    <script>
+      // Apply the saved theme before the app loads (no flash of the wrong colours).
+      (function () {
+        var choice = null;
+        try { choice = localStorage.getItem('schooling.theme'); } catch (e) {}
+        var dark = choice === 'dark' || (choice !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
