@@ -11,6 +11,9 @@ const PATHS = {
   attendance: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 11l2 2 4-4',
   report: 'M6 3h9l4 4v14H6zM9 12h7M9 16h7M9 8h3',
   logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
+  people: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3 3-5 6-5s6 2 6 5M17 11a2.5 2.5 0 100-5M18 15c2 .5 3 2 3 5',
+  file: 'M7 3h7l5 5v13H7zM14 3v5h5',
+  send: 'M4 12l16-8-6 16-3-6z',
 } as const;
 
 export type IconName = keyof typeof PATHS;

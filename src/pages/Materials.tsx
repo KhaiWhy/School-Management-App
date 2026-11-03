@@ -1,18 +1,14 @@
 import { useUser } from '../auth/AuthContext';
-import ComingSoon from '../components/ComingSoon';
+import MaterialList from '../components/MaterialList';
+import { PageHeader } from '../components/ui';
+import { isStaff } from '../lib/format';
 
 export default function Materials() {
   const user = useUser();
   return (
-    <ComingSoon
-      icon="material"
-      title="Class materials"
-      intro={
-        user.role === 'teacher'
-          ? 'Upload lesson slides, notes and worksheets for your classes.'
-          : 'Lesson slides, notes and worksheets your teachers have shared.'
-      }
-      items={['Grouped by class', 'Download or open in the browser']}
-    />
+    <section className="page">
+      <PageHeader title="Class materials" />
+      <MaterialList canAdd={isStaff(user.role)} />
+    </section>
   );
 }

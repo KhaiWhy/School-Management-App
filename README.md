@@ -1,41 +1,76 @@
 # School-Management-App
 App that digitizes school's management resources all in one app, ranging from assignments, announcements, attendance, timetable, merit systems and more.
 
+## What it does
+- **Students:** school and class announcements, join classes with a code, assignments
+  (hand in text or files, see grades and feedback), class materials, timetable, school
+  calendar, activities (CCAs), direct messages, own attendance and published reports.
+- **Teachers:** everything above, plus create classes, post to a class, set and grade
+  assignments, upload materials, add lessons and events, run activities, take the
+  register and write term reports.
+- **Admins:** make people teachers or admins (People page).
+- Sign up with full name, email and password; sign in with username (made from the
+  email, editable) or email.
+
 ## Run it
-Needs Node.js 20 or newer.
+Needs Node.js 22 or newer and a Supabase project (see [SUPABASE-SETUP.md](SUPABASE-SETUP.md)).
 
 ```bash
 npm install
+cp .env.example .env.local   # then fill in the Supabase keys
 npm run dev
 ```
 
-Open the link it prints (usually http://localhost:5173). `npm run build` makes the
-production files in `dist/`. Deploying: see [DEPLOY.md](DEPLOY.md).
+Open http://localhost:5173. For username sign-in while developing, run
+`npm run server` in a second terminal.
+
+| Command | Does |
+|---|---|
+| `npm run dev` | App with live reload |
+| `npm run server` | Express server on :3000 (username sign-in), reads `.env.local` |
+| `npm run build` | Type-check, then build to `dist/` |
+| `npm start` | Serve `dist/` + the API (what Render runs) |
+| `npm run typecheck` | Type-check only |
+| `npm run test:db` | Check all 102 database access rules locally |
+
+Deploying: [DEPLOY.md](DEPLOY.md).
 
 ## How it's built
-- **React + Vite + TypeScript** (`.tsx`), pages switched with **React Router**.
-  `npm run typecheck` checks types; `npm run build` does too, so a type error stops a deploy.
-- **Phase 1 (now):** front end only. Sign-in is a demo (pick Student or Teacher),
-  and data is saved in the browser's localStorage, so each device has its own copy.
-- **Phase 2 (next):** Supabase for real accounts, the database, file uploads and
-  messages. Only `src/data/store.ts` and the sign-in change; the pages stay the same.
+- **Front end:** React + Vite + TypeScript (`.tsx`), React Router.
+- **Back end:** Supabase — Postgres database, sign-in, file storage, live messages.
+  Every table has Row Level Security, so the database itself decides who can see or
+  change what (see `supabase/migrations/`).
+- **Server:** `server.mjs` (Node + Express) serves the app on Render and does
+  username sign-in, the one step that needs a secret key.
 
 ## Where things are
 | Path | What it is |
 |---|---|
 | `src/App.tsx` | Every page and its address (route) |
+| `src/pages/` | One file per page |
 | `src/components/Layout.tsx` | Header, left menu, classrooms column |
 | `src/components/Announcements.tsx` | Announcements (from the original `home.html`) |
-| `src/pages/` | One file per page |
-| `src/data/store.ts` | All data reads and saves — the one file Supabase replaces |
-| `src/data/types.ts` | The shape of each kind of data (Announcement, Classroom, ...) |
+| `src/components/AssignmentList.tsx`, `MaterialList.tsx` | Lists used on several pages |
+| `src/components/ui.tsx` | Small shared pieces (errors, loading, class picker) |
+| `src/data/` | All database calls, one file per area |
+| `src/data/types.ts` | The shape of each kind of data |
 | `src/auth/AuthContext.tsx` | Who is signed in, and page access per role |
+| `src/lib/` | Supabase client, loading helpers, date formatting |
 | `src/styles.css` | All styles |
+| `supabase/migrations/` | The database: tables, rules, storage |
+| `supabase/tests/` | Database rule checks (`npm run test:db`) |
+| `server.mjs` | Express server for Render |
 | `legacy/` | The original HTML/CSS version, kept for reference |
-| `render.yaml` | Render deploy settings |
 
 ## Adding a page
 1. Make `src/pages/MyPage.tsx`.
 2. Add a `<Route>` for it in `src/App.tsx`.
 3. Add a link to the `NAV` list in `src/components/Layout.tsx`
-   (add `roles: ['teacher']` to show it to teachers only).
+   (add `roles: ['teacher', 'admin']` to limit who sees it).
+4. Database calls go in a file in `src/data/`; new tables in a new file in
+   `supabase/migrations/` with rules, plus checks in `supabase/tests/rls.test.mjs`.
+
+## Not built yet
+- Email alerts for new announcements.
+- Announcements for one department (e.g. primary / secondary) only.
+- App name, logo and colours (waiting on Khai).

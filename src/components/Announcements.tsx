@@ -1,37 +1,36 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import * as store from '../data/store';
-import type { Announcement } from '../data/types';
+import { useUser } from '../auth/AuthContext';
+import * as api from '../data/announcements';
+import { confirmDelete, formatDateTime } from '../lib/format';
+import { useAction, useLoad } from '../lib/useLoad';
+import { ErrorNote, Loading } from './ui';
 
-// Ported from legacy/home.html. Teachers post, edit and delete; students read.
+// Ported from legacy/home.html. classId null = whole school (home page), otherwise one class.
 
-// The title and text fields, reached by name on both forms.
 interface AnnouncementFields extends HTMLFormControlsCollection {
   title: HTMLInputElement;
-  text: HTMLTextAreaElement;
+  body: HTMLTextAreaElement;
 }
 
 function fields(form: HTMLFormElement) {
   return form.elements as AnnouncementFields;
 }
 
-function formatWhen(item: Announcement) {
-  if (!item.createdAt) return item.legacyDate || '';
-  const stamp = item.editedAt && item.editedAt !== 'legacy' ? item.editedAt : item.createdAt;
-  return new Date(stamp).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
-}
-
-export default function Announcements({ canManage }: { canManage: boolean }) {
-  const [items, setItems] = useState<Announcement[]>([]);
+export default function Announcements({
+  classId,
+  canPost,
+  heading = 'Announcements',
+}: {
+  classId: string | null;
+  canPost: boolean;
+  heading?: string;
+}) {
+  const user = useUser();
+  const { data: items = [], error, loading, reload } = useLoad(() => api.listAnnouncements(classId), [classId]);
+  const action = useAction();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    store.listAnnouncements().then(setItems);
-  }, []);
 
   // Close an open menu when clicking anywhere else.
   useEffect(() => {
@@ -57,38 +56,47 @@ export default function Announcements({ canManage }: { canManage: boolean }) {
     event.preventDefault();
     const form = event.currentTarget;
     const title = fields(form).title.value.trim();
-    const text = fields(form).text.value.trim();
-    if (!title || !text) return;
-    setItems(await store.createAnnouncement({ title, text }));
-    setOpenMenuId(null);
-    setEditingId(null);
-    form.reset();
+    const body = fields(form).body.value.trim();
+    if (!title || !body) return;
+    const saved = await action.run(() => api.createAnnouncement(classId, { title, body }));
+    if (saved) {
+      form.reset();
+      await reload();
+    }
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
-    const { title: titleInput, text: textInput } = fields(event.currentTarget);
+    const { title: titleInput, body: bodyInput } = fields(event.currentTarget);
     const title = titleInput.value.trim();
-    const text = textInput.value.trim();
+    const body = bodyInput.value.trim();
     if (!title) {
       titleInput.value = '';
       titleInput.reportValidity();
       return;
     }
-    if (!text) {
-      textInput.value = '';
-      textInput.reportValidity();
+    if (!body) {
+      bodyInput.value = '';
+      bodyInput.reportValidity();
       return;
     }
-    setItems(await store.updateAnnouncement(id, { title, text }));
-    setEditingId(null);
-    focusIn(id, '.more-options-btn');
+    if (await action.run(() => api.updateAnnouncement(id, { title, body }))) {
+      setEditingId(null);
+      await reload();
+      focusIn(id, '.more-options-btn');
+    }
   }
 
-  async function handleDelete(id: string) {
-    setItems(await store.deleteAnnouncement(id));
+  async function handleDelete(id: string, title: string) {
     setOpenMenuId(null);
-    setEditingId(null);
+    if (!confirmDelete(`"${title}"`)) {
+      focusIn(id, '.more-options-btn');
+      return;
+    }
+    if (await action.run(() => api.deleteAnnouncement(id))) {
+      setEditingId(null);
+      await reload();
+    }
   }
 
   function toggleMenu(id: string) {
@@ -113,103 +121,116 @@ export default function Announcements({ canManage }: { canManage: boolean }) {
     }
   }
 
-  return (
-    <section className="announcements" aria-labelledby="announcements-title">
-      <h1 id="announcements-title" className="page-title">Announcements</h1>
+  const formId = classId ? `class-${classId}` : 'school';
 
-      {canManage && (
+  return (
+    <section className="announcements" aria-labelledby={`${formId}-announcements`}>
+      <h2 id={`${formId}-announcements`} className="section-title">{heading}</h2>
+
+      {canPost && (
         <form className="announcement-form" onSubmit={handleCreate}>
-          <label className="visually-hidden" htmlFor="new-title">Title</label>
-          <input id="new-title" name="title" placeholder="Write your title here..." required />
-          <label className="visually-hidden" htmlFor="new-text">Announcement</label>
-          <textarea id="new-text" name="text" placeholder="Write your announcement here..." required />
-          <button type="submit" className="btn btn-primary">Add announcement</button>
+          <label className="visually-hidden" htmlFor={`${formId}-title`}>Title</label>
+          <input id={`${formId}-title`} name="title" placeholder="Write your title here..." maxLength={200} required />
+          <label className="visually-hidden" htmlFor={`${formId}-body`}>Announcement</label>
+          <textarea id={`${formId}-body`} name="body" placeholder="Write your announcement here..." maxLength={10000} required />
+          <button type="submit" className="btn btn-primary" disabled={action.busy}>
+            {action.busy ? 'Posting…' : 'Add announcement'}
+          </button>
         </form>
       )}
 
-      {items.length === 0 ? (
+      <ErrorNote error={action.error ?? error} />
+
+      {loading && items.length === 0 ? (
+        <Loading />
+      ) : items.length === 0 ? (
         <p className="empty">No announcements yet.</p>
       ) : (
         <div ref={listRef}>
-          {items.map((item) => (
-            <article key={item.id} className="announcement-card" data-id={item.id}>
-              {editingId === item.id ? (
-                <form className="announcement-edit-form" onSubmit={(event) => handleSave(event, item.id)}>
-                  <label>
-                    Title
-                    <input name="title" defaultValue={item.title} required />
-                  </label>
-                  <label>
-                    Announcement
-                    <textarea name="text" defaultValue={item.text} required />
-                  </label>
-                  <div className="form-actions">
-                    <button type="submit" className="btn btn-primary">Save</button>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => {
-                        setEditingId(null);
-                        focusIn(item.id, '.more-options-btn');
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <h2>{item.title}</h2>
-                  <p className="announcement-text">{item.text}</p>
-                  <small className="announcement-meta">
-                    {formatWhen(item)}
-                    {item.editedAt && <span className="italic"> (Edited)</span>}
-                  </small>
-
-                  {canManage && (
-                    <>
+          {items.map((item) => {
+            const canManage = item.author_id === user.id || user.role === 'admin';
+            const edited = item.updated_at !== item.created_at;
+            return (
+              <article key={item.id} className="announcement-card" data-id={item.id}>
+                {editingId === item.id ? (
+                  <form className="announcement-edit-form" onSubmit={(event) => handleSave(event, item.id)}>
+                    <label>
+                      Title
+                      <input name="title" defaultValue={item.title} maxLength={200} required />
+                    </label>
+                    <label>
+                      Announcement
+                      <textarea name="body" defaultValue={item.body} maxLength={10000} required />
+                    </label>
+                    <div className="form-actions">
+                      <button type="submit" className="btn btn-primary" disabled={action.busy}>Save</button>
                       <button
                         type="button"
-                        className="more-options-btn"
-                        aria-label={`More options for ${item.title}`}
-                        aria-haspopup="true"
-                        aria-expanded={openMenuId === item.id}
-                        onClick={() => toggleMenu(item.id)}
+                        className="btn"
+                        onClick={() => {
+                          setEditingId(null);
+                          focusIn(item.id, '.more-options-btn');
+                        }}
                       >
-                        ⋮
+                        Cancel
                       </button>
-                      <div
-                        className="announcement-options"
-                        role="menu"
-                        hidden={openMenuId !== item.id}
-                        onKeyDown={(event) => handleMenuKeys(event, item.id)}
-                      >
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <h3>{item.title}</h3>
+                    <p className="announcement-text">{item.body}</p>
+                    <small className="announcement-meta">
+                      {item.author?.full_name ? `${item.author.full_name} · ` : ''}
+                      {formatDateTime(edited ? item.updated_at : item.created_at)}
+                      {edited && <span className="italic"> (Edited)</span>}
+                    </small>
+
+                    {canManage && (
+                      <>
                         <button
                           type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setEditingId(item.id);
-                            setOpenMenuId(null);
-                            focusIn(item.id, 'input[name="title"]');
-                          }}
+                          className="more-options-btn"
+                          aria-label={`More options for ${item.title}`}
+                          aria-haspopup="true"
+                          aria-expanded={openMenuId === item.id}
+                          onClick={() => toggleMenu(item.id)}
                         >
-                          Edit announcement
+                          ⋮
                         </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="delete-option"
-                          onClick={() => handleDelete(item.id)}
+                        <div
+                          className="announcement-options"
+                          role="menu"
+                          hidden={openMenuId !== item.id}
+                          onKeyDown={(event) => handleMenuKeys(event, item.id)}
                         >
-                          Delete
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </article>
-          ))}
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setEditingId(item.id);
+                              setOpenMenuId(null);
+                              focusIn(item.id, 'input[name="title"]');
+                            }}
+                          >
+                            Edit announcement
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="delete-option"
+                            onClick={() => handleDelete(item.id, item.title)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
