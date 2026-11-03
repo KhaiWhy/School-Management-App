@@ -112,6 +112,6 @@ app.get('/{*path}', (_req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Schooling running on http://localhost:${port}`);
+  console.log(`Schooling listening on port ${port}`);
   if (!admin) console.log('Note: SUPABASE_SERVICE_ROLE_KEY not set, so username sign-in is off (email sign-in still works).');
 });

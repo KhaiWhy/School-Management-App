@@ -22,7 +22,7 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
-  create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint);
+  create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
   create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
   alter table storage.objects enable row level security;
   create function storage.foldername(name text) returns text[] language sql immutable
@@ -237,6 +237,13 @@ await count('student sees material + own work', 'S1', `select name from storage.
 await count('classmate sees material only', 'S2', `select name from storage.objects`, [], 1);
 await count('outsider sees nothing', 'S3', `select name from storage.objects`, [], 0);
 await count('teacher sees all', 'T', `select name from storage.objects`, [], 2);
+
+// ---------- helper functions locked to signed-in users ----------
+await denied('anon cannot call assignment_class', 'ANON', `select public.assignment_class($1)`, [asgId]);
+await denied('anon cannot call in_class', 'ANON', `select public.in_class($1)`, [classId]);
+await ok('signed-in user can call in_class', 'S1', `select public.in_class($1)`, [classId]);
+const bucket = await db.query(`select allowed_mime_types from storage.buckets where id = 'class-files'`);
+check('bucket has a file-type list', (bucket.rows[0]?.allowed_mime_types ?? []).includes('application/pdf'));
 
 console.log(`${pass} passed, ${failures.length} failed`);
 for (const f of failures) console.log('FAIL ' + f);

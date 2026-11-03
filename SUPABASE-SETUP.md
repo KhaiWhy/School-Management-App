@@ -30,6 +30,10 @@ set-up, about 10 minutes. You need the Supabase project Khai made (Free plan,
 
 Run it once only. Running it again fails with "already exists" — that's harmless.
 
+4. Then do the same with `supabase/migrations/20261103020000_lock_helpers.sql`: it limits the
+   helper functions to signed-in users and sets the allowed file types (PDF, images, Word,
+   PowerPoint, Excel, OpenDocument, text, CSV, zip; up to 20 MB). Safe to run again.
+
 What it sets up:
 
 | Area | Who can do what |
@@ -102,7 +106,7 @@ their username.
 
 ## Testing the rules without Supabase
 `npm run test:db` runs the database file on a local copy of Postgres and checks
-102 rules (who can read and change what). Run it after changing the SQL.
+106 rules (who can read and change what). Run it after changing the SQL.
 
 ## Changing the database later
 Add a new file in `supabase/migrations/` (e.g. `20261201000000_add_departments.sql`),

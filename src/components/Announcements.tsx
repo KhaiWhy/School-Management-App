@@ -31,6 +31,7 @@ export default function Announcements({
   const action = useAction();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [composing, setComposing] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Close an open menu when clicking anywhere else.
@@ -62,6 +63,7 @@ export default function Announcements({
     const saved = await action.run(() => api.createAnnouncement(classId, { title, body }));
     if (saved) {
       form.reset();
+      setComposing(false);
       await reload();
     }
   }
@@ -128,14 +130,21 @@ export default function Announcements({
     <section className="announcements" aria-labelledby={`${formId}-announcements`}>
       <h2 id={`${formId}-announcements`} className="section-title">{heading}</h2>
 
-      {canPost && (
+      {canPost && !composing && (
+        <button type="button" className="composer-trigger" onClick={() => setComposing(true)}>
+          <Avatar name={user.full_name || user.username} size={32} />
+          <span>{classId ? 'Post to this class…' : 'Write an announcement…'}</span>
+        </button>
+      )}
+
+      {canPost && composing && (
         <form className="announcement-form" onSubmit={handleCreate}>
           <label className="visually-hidden" htmlFor={`${formId}-title`}>Title</label>
-          <input id={`${formId}-title`} name="title" placeholder={classId ? 'Title for this class' : 'Write your title here...'} maxLength={200} required />
+          <input id={`${formId}-title`} name="title" placeholder="Title" maxLength={200} required autoFocus />
           <label className="visually-hidden" htmlFor={`${formId}-body`}>Announcement</label>
           <textarea id={`${formId}-body`} name="body" placeholder="Write your announcement here..." maxLength={10000} required />
           <div className="form-actions form-actions-end">
-            <button type="reset" className="btn btn-ghost">Cancel</button>
+            <button type="button" className="btn btn-ghost" onClick={() => setComposing(false)}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={action.busy}>
               {action.busy ? 'Posting…' : 'Post announcement'}
             </button>

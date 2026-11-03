@@ -8,6 +8,7 @@
   --surface: #ffffff;
   --surface-2: #eef2f7;
   --border: #d9e0ea;
+  --field-border: #7d8aa0;
   --text: #0f172a;
   --muted: #526079;
   --primary: #1d5fd1;
@@ -17,14 +18,14 @@
   --on-soft: #1747a6;
   --accent: #0b7f91;
   --accent-soft: #e2f4f6;
-  --success: #15803d;
+  --accent-ink: #08697a;
+  --success: #116932;
   --success-bg: #e7f6ec;
   --warning: #b45309;
   --warning-bg: #fdf1e4;
   --danger: #b42318;
   --danger-bg: #fdecea;
-  --shadow: 0 1px 3px rgb(15 23 41 / 6%), 0 4px 12px rgb(15 23 41 / 4%);
-  --focus: 0 0 0 3px rgb(29 95 209 / 35%);
+  --shadow: none;
   color-scheme: light;
 }
 
@@ -33,6 +34,7 @@
   --surface: #121a2b;
   --surface-2: #1a2438;
   --border: #2a3650;
+  --field-border: #61729a;
   --text: #e6ebf3;
   --muted: #9aa7bd;
   --primary: #7aa7ff;
@@ -42,6 +44,7 @@
   --on-soft: #b9cfff;
   --accent: #3cc6d9;
   --accent-soft: #123038;
+  --accent-ink: #3cc6d9;
   --success: #4ade80;
   --success-bg: #12301f;
   --warning: #fbbf24;
@@ -49,7 +52,6 @@
   --danger: #f87171;
   --danger-bg: #3a1716;
   --shadow: none;
-  --focus: 0 0 0 3px rgb(122 167 255 / 45%);
   color-scheme: dark;
 }
 
@@ -92,6 +94,14 @@ h2,
 h3 {
   font-family: var(--font-head);
   letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+p,
+li,
+.announcement-text,
+.item-text {
+  text-wrap: pretty;
 }
 
 ul {
@@ -118,9 +128,8 @@ select {
 }
 
 :focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
-  border-radius: var(--radius);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .visually-hidden {
@@ -165,7 +174,7 @@ select {
 .optional,
 .hint {
   font-weight: 400;
-  font-size: 0.9em;
+  font-size: 12px;
 }
 
 .hint {
@@ -209,7 +218,7 @@ select {
 
 .brand {
   font-family: var(--font-head);
-  font-size: 1.45rem;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -288,7 +297,7 @@ select {
 
 .rail-group-title {
   padding: 4px 12px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -329,7 +338,7 @@ select {
   align-items: center;
   gap: 8px;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 
@@ -375,6 +384,7 @@ select {
   grid-area: main;
   overflow-y: auto;
   padding: 32px;
+  container-type: inline-size;
 }
 
 .content:focus {
@@ -384,7 +394,7 @@ select {
 
 .page {
   max-width: 760px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .page-wide {
@@ -401,7 +411,7 @@ select {
 }
 
 .page-title {
-  font-size: 1.9rem;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -415,7 +425,7 @@ select {
 }
 
 .section-title {
-  font-size: 1.3rem;
+  font-size: 20px;
   font-weight: 700;
   margin: 28px 0 12px;
 }
@@ -437,7 +447,7 @@ select {
 .classes-title {
   margin: 4px 4px 12px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -456,7 +466,7 @@ select {
   gap: 12px;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   color: var(--text);
 }
 
@@ -517,7 +527,7 @@ select {
   gap: 8px;
   padding: 12px;
   border: 1px dashed var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   color: var(--primary);
   font-weight: 600;
 }
@@ -540,8 +550,8 @@ select {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 9px 16px;
+  min-height: 44px;
+  padding: 10px 18px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -586,9 +596,9 @@ select {
 }
 
 .btn-small {
-  min-height: 32px;
-  padding: 4px 12px;
-  font-size: 0.9rem;
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 14px;
 }
 
 .btn-block {
@@ -617,12 +627,14 @@ input:not([type='checkbox'], [type='radio'], [type='file']),
 select,
 textarea {
   width: 100%;
-  min-height: 42px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--field-border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
+  font-size: 15px;
+  font-weight: 400;
 }
 
 input::placeholder,
@@ -637,8 +649,26 @@ textarea:focus-visible {
 }
 
 input[type='file'] {
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--muted);
+}
+
+input[type='file']::file-selector-button {
+  min-height: 44px;
+  margin-right: 12px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+input[type='file']::file-selector-button:hover {
+  background: var(--surface-2);
 }
 
 input[type='checkbox'],
@@ -658,7 +688,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -672,6 +702,11 @@ textarea {
 
 .field-row > .field {
   flex: 1 1 180px;
+}
+
+.field-row input:not([type='checkbox'], [type='radio'], [type='file']),
+.field-row select {
+  height: 44px;
 }
 
 .field-row-button {
@@ -729,7 +764,7 @@ textarea {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 
@@ -749,7 +784,7 @@ textarea {
 .segmented button[aria-checked='true'] {
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--shadow);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 [data-theme='dark'] .segmented button[aria-selected='true'],
@@ -829,8 +864,8 @@ textarea {
 .badge-info,
 .status-excused,
 .badge-event {
-  background: var(--primary-soft);
-  color: var(--on-soft);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .status-late,
@@ -842,7 +877,7 @@ textarea {
 .badge-holiday,
 .badge-term {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .tone-good {
@@ -854,7 +889,12 @@ textarea {
 }
 
 .tone-primary {
-  color: var(--primary);
+  color: var(--text);
+}
+
+.summary-line {
+  margin: -4px 0 16px;
+  color: var(--muted);
 }
 
 .danger-zone {
@@ -878,7 +918,7 @@ textarea {
 
 .panel-title {
   margin-bottom: 12px;
-  font-size: 1.1rem;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -894,7 +934,7 @@ textarea {
   gap: 14px;
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
 }
@@ -921,6 +961,7 @@ a.item-row:hover {
 }
 
 .item-text {
+  font-size: 15px;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -979,20 +1020,20 @@ a.item-row:hover {
   min-width: 48px;
   padding: 6px;
   border-radius: var(--radius);
-  background: var(--primary-soft);
-  color: var(--on-soft);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .date-chip strong {
   font-family: var(--font-head);
-  font-size: 1.15rem;
+  font-size: 17px;
   line-height: 1.1;
 }
 
 .breadcrumb {
   margin-bottom: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .breadcrumb a {
@@ -1041,7 +1082,7 @@ a.item-row:hover {
 
 .announcement-card {
   position: relative;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   padding: 20px 56px 18px 20px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1051,12 +1092,14 @@ a.item-row:hover {
 
 .announcement-card h3 {
   margin-bottom: 6px;
-  font-size: 1.1rem;
+  font-size: 17px;
   font-weight: 600;
 }
 
 .announcement-text {
   margin-bottom: 10px;
+  font-size: 15px;
+  line-height: 1.6;
   white-space: pre-line; /* keeps line breaks and lists as typed */
   overflow-wrap: anywhere;
 }
@@ -1079,7 +1122,7 @@ a.item-row:hover {
   border-radius: var(--radius);
   background: transparent;
   color: var(--muted);
-  font-size: 1.4rem;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
@@ -1100,7 +1143,7 @@ a.item-row:hover {
   flex-direction: column;
   padding: 6px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 8px 24px rgb(15 23 41 / 14%);
 }
@@ -1137,7 +1180,7 @@ a.item-row:hover {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -1145,8 +1188,16 @@ a.item-row:hover {
 
 .today-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 230px);
   gap: 12px;
+}
+
+.lesson-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.today {
   margin-bottom: 24px;
 }
 
@@ -1155,16 +1206,72 @@ a.item-row:hover {
   flex-direction: column;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
 }
 
 a.lesson:hover {
   border-color: var(--primary);
-  border-left-color: var(--accent);
   text-decoration: none;
+}
+
+.lesson-now,
+.lesson-next {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.lesson-flag,
+.lesson-done-label {
+  display: inline-block;
+  min-width: 3.1em;
+  margin-right: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lesson-flag {
+  color: var(--accent-ink);
+}
+
+.lesson-done {
+  background: var(--surface-2);
+}
+
+.lesson-done-label {
+  color: var(--muted);
+}
+
+.today-title {
+  margin-bottom: 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.composer-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 15px;
+  text-align: left;
+  cursor: text;
+}
+
+.composer-trigger:hover {
+  border-color: var(--primary);
 }
 
 .lesson-time,
@@ -1186,7 +1293,7 @@ a.lesson:hover {
 .home-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 24px;
+  gap: 16px 24px;
   align-items: start;
 }
 
@@ -1234,7 +1341,7 @@ a.lesson:hover {
 
 .class-card strong {
   font-family: var(--font-head);
-  font-size: 1.1rem;
+  font-size: 17px;
 }
 
 .class-card:hover {
@@ -1255,21 +1362,28 @@ a.lesson:hover {
   gap: 12px;
   margin-bottom: 16px;
   padding: 28px;
-  border-radius: 16px;
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-/* Dark mode: a soft banner instead of a big bright block. */
-[data-theme='dark'] .class-banner {
   border: 1px solid var(--border);
+  border-radius: 16px;
   background: var(--primary-soft);
   color: var(--text);
 }
 
-[data-theme='dark'] .join-code {
-  background: var(--surface);
-  color: var(--text);
+.class-banner-next {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.class-banner-next span {
+  white-space: nowrap;
 }
 
 .class-banner .page-title {
@@ -1286,8 +1400,26 @@ a.lesson:hover {
   gap: 8px;
   padding: 8px 14px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--on-primary) 16%, transparent);
-  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.join-code-copy {
+  min-height: 36px;
+  padding: 4px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.join-code-copy:hover {
+  background: var(--primary-soft);
 }
 
 .join-code strong {
@@ -1359,7 +1491,7 @@ a.lesson:hover {
 
 .submission-head h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 17px;
 }
 
 .grade-form {
@@ -1426,7 +1558,7 @@ a.lesson:hover {
 
 .stat strong {
   font-family: var(--font-head);
-  font-size: 1.6rem;
+  font-size: 24px;
   line-height: 1.2;
 }
 
@@ -1436,48 +1568,133 @@ a.lesson:hover {
 
 /* ---------- Timetable, calendar ---------- */
 
-.week {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-}
-
-.week-day {
-  padding: 12px;
-  border: 1px solid transparent;
+.period-grid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
-.week-day.is-today {
-  border-color: var(--primary);
-  background: var(--primary-soft);
+.period-grid {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.week-day h2 {
-  margin-bottom: 10px;
-  font-family: var(--font-body);
+.period-grid th,
+.period-grid td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+}
+
+.period-grid thead th {
+  padding: 12px 10px;
+  font-weight: 600;
+}
+
+.period-grid thead th .badge {
+  margin-left: 8px;
+}
+
+.period-grid .period-time {
+  width: 72px;
+  color: var(--muted);
   font-size: 14px;
   font-weight: 600;
 }
 
-.week-day.is-today h2 {
-  color: var(--on-soft);
+.period-grid .is-today {
+  background: var(--accent-soft);
 }
 
-.week-day ul {
+.period-grid thead .is-today {
+  color: var(--accent-ink);
+}
+
+.period-grid tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.period-grid .lesson + .lesson {
+  margin-top: 6px;
+}
+
+.day-view {
+  display: none;
+}
+
+.day-picker {
+  margin-bottom: 14px;
+}
+
+.day-picker button.is-today::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+
+.day-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
-.week-day .lesson-name {
-  color: var(--text);
+/* After the defaults so they win: when the main column is narrow, the timetable shows one
+   day at a time and lessons (Home strip and day view) become compact rows with a fixed
+   time column, so every class name lines up. */
+@container (max-width: 760px) {
+  .period-grid-wrap {
+    display: none;
+  }
+
+  .day-view {
+    display: block;
+  }
+
+  .today-strip {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .lesson {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr) auto;
+    grid-template-areas: 'time name action' 'time room action';
+    column-gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+  }
+
+  .lesson .lesson-time {
+    grid-area: time;
+  }
+
+  .lesson .lesson-name {
+    grid-area: name;
+  }
+
+  .lesson .lesson-room {
+    grid-area: room;
+  }
+
+  .lesson .lesson-remove {
+    grid-area: action;
+  }
 }
 
 /* ---------- Activities ---------- */
 
 .activity h3 {
-  font-size: 1.1rem;
+  font-size: 17px;
 }
 
 .activity-meets {
@@ -1548,12 +1765,12 @@ a.lesson:hover {
 .status-picker label {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
+  min-height: 40px;
   padding: 4px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--field-border);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -1563,7 +1780,8 @@ a.lesson:hover {
 }
 
 .status-picker label:has(input:focus-visible) {
-  box-shadow: var(--focus);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .status-picker input {
@@ -1576,8 +1794,14 @@ a.lesson:hover {
   border-color: transparent;
 }
 
-.register + .form-actions {
+.register-save {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   margin-top: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .table {
@@ -1612,7 +1836,7 @@ a.lesson:hover {
 .chat {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
-  height: calc(100dvh - var(--topbar-h) - 64px);
+  height: 100%;
   min-height: 480px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1630,7 +1854,7 @@ a.lesson:hover {
 }
 
 .chat-list .page-title {
-  font-size: 1.4rem;
+  font-size: 20px;
 }
 
 .chat-people {
@@ -1643,7 +1867,7 @@ a.lesson:hover {
   align-items: center;
   gap: 12px;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   color: var(--text);
 }
 
@@ -1718,25 +1942,25 @@ a.lesson:hover {
 }
 
 .bubble p {
+  font-size: 15px;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 
 .bubble small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
 .bubble-mine {
   align-self: flex-end;
   border-radius: 16px 16px 4px 16px;
-  background: var(--primary);
-  color: var(--on-primary);
+  background: var(--primary-soft);
+  color: var(--text);
 }
 
 .bubble-mine small {
-  color: var(--on-primary);
-  opacity: 0.8;
+  color: var(--on-soft);
 }
 
 .chat-compose {
@@ -1750,6 +1974,7 @@ a.lesson:hover {
 .chat-compose textarea {
   min-height: 44px;
   max-height: 160px;
+  resize: none;
   border-color: transparent;
   background: var(--surface-2);
 }
@@ -1779,7 +2004,7 @@ a.lesson:hover {
 }
 
 .brand-large {
-  font-size: 2rem;
+  font-size: 30px;
   font-weight: 800;
   text-align: center;
 }
@@ -1809,7 +2034,7 @@ code {
   padding: 1px 5px;
   border-radius: 4px;
   background: var(--surface-2);
-  font-size: 0.9em;
+  font-size: 12px;
 }
 
 /* ---------- Profile, More ---------- */
@@ -1900,6 +2125,23 @@ button.more-link:hover {
 /* ---------- Smaller screens ---------- */
 
 @media (max-width: 1180px) {
+  .app {
+    grid-template-columns: var(--rail-w) minmax(0, 1fr);
+    grid-template-areas:
+      'top top'
+      'rail main';
+  }
+
+  .classes {
+    display: none;
+  }
+
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
   :root {
     --rail-w: 76px;
   }
@@ -1933,23 +2175,6 @@ button.more-link:hover {
     flex: none;
   }
 
-  .home-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 960px) {
-  .app {
-    grid-template-columns: var(--rail-w) minmax(0, 1fr);
-    grid-template-areas:
-      'top top'
-      'rail main';
-  }
-
-  .classes {
-    display: none;
-  }
-
   .content {
     padding: 24px;
   }
@@ -1975,7 +2200,7 @@ button.more-link:hover {
   }
 
   .brand {
-    font-size: 1.25rem;
+    font-size: 20px;
   }
 
   .role-badge {
@@ -2052,9 +2277,9 @@ button.more-link:hover {
     align-items: center;
     gap: 2px;
     padding: 6px 4px;
-    border-radius: 10px;
+    border-radius: var(--radius);
     color: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
   }
 
@@ -2068,7 +2293,7 @@ button.more-link:hover {
   }
 
   .page-title {
-    font-size: 1.5rem;
+    font-size: 24px;
   }
 
   .class-banner {
@@ -2080,12 +2305,19 @@ button.more-link:hover {
   }
 
   .announcement-card {
-    padding: 16px 50px 14px 16px;
+    padding: 16px 50px 16px 16px;
+  }
+
+  .panel,
+  .announcement-form,
+  .composer-trigger {
+    padding: 16px;
   }
 
   .chat {
     grid-template-columns: minmax(0, 1fr);
-    height: calc(100dvh - var(--topbar-h) - 140px);
+    height: calc(100% + 42px);
+    min-height: 0;
     margin: -18px -16px -24px;
     border: 0;
     border-radius: 0;
@@ -2102,7 +2334,7 @@ button.more-link:hover {
   }
 
   .chat-head {
-    padding: 10px 12px;
+    padding: 10px 16px;
   }
 
   .chat-back {
@@ -2111,11 +2343,25 @@ button.more-link:hover {
   }
 
   .chat-messages {
-    padding: 16px 12px;
+    padding: 16px;
   }
 
   .chat-compose {
-    padding: 10px 12px;
+    padding: 10px 16px;
+  }
+
+
+  .lesson .lesson-time {
+    grid-area: time;
+    align-self: center;
+  }
+
+  .lesson .lesson-name {
+    grid-area: name;
+  }
+
+  .lesson .lesson-room {
+    grid-area: room;
   }
 
   .bubble {
@@ -2126,4 +2372,78 @@ button.more-link:hover {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  input:not([type='checkbox'], [type='radio'], [type='file']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .register li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .status-picker label {
+    justify-content: center;
+    min-height: 44px;
+    padding: 4px;
+  }
+
+  .register-save {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 10px 16px;
+  }
+
+  .period-grid-wrap {
+    display: none;
+  }
+
+  .day-view {
+    display: block;
+  }
+}
+
+/* Last card in a list sits on the grid gap, not gap + margin. */
+.announcements > div > .announcement-card:last-child,
+.home-side > .panel:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Privacy (public page) ---------- */
+
+.privacy {
+  min-height: 100vh;
+  padding: 40px 16px 64px;
+  background: var(--bg);
+}
+
+.privacy-body {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.privacy .lead {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.privacy p,
+.privacy-list li {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.privacy-list {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+  list-style: disc;
 }

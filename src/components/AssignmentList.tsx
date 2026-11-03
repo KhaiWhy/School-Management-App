@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
 import { createAssignment, listAssignments, listSubmissions } from '../data/coursework';
 import type { Assignment, Submission } from '../data/types';
-import { formatDateTime, localInputToIso } from '../lib/format';
+import { formatDue, localInputToIso } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
 import { ClassPicker, Empty, ErrorNote, Loading } from './ui';
 
@@ -63,7 +63,7 @@ export default function AssignmentList({ classId, canCreate }: { classId?: strin
                     <strong>{a.title}</strong>
                     <small>
                       {!classId && a.class?.name ? `${a.class.name} · ` : ''}
-                      {a.due_at ? `Due ${formatDateTime(a.due_at)}` : 'No due date'}
+                      {a.due_at ? `Due ${formatDue(a.due_at)}` : 'No due date'}
                     </small>
                   </span>
                   {isStudent ? (

@@ -16,6 +16,7 @@ import Messages from './pages/Messages';
 import More from './pages/More';
 import NotFound from './pages/NotFound';
 import People from './pages/People';
+import Privacy from './pages/Privacy';
 import Profile from './pages/Profile';
 import Reports from './pages/Reports';
 import ResetPassword from './pages/ResetPassword';
@@ -29,6 +30,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route
         element={
           <RequireAuth>

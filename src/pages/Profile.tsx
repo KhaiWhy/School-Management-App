@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth, useUser } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import { ErrorNote, PageHeader } from '../components/ui';
@@ -94,6 +95,10 @@ export default function Profile() {
         <ErrorNote error={password.error} />
         <button type="submit" className="btn btn-primary" disabled={password.busy}>Change password</button>
       </form>
+
+      <p className="hint">
+        <Link to="/privacy">Privacy: what Schooling stores and who can see it</Link>
+      </p>
     </section>
   );
 }

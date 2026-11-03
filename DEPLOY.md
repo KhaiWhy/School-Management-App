@@ -49,7 +49,7 @@ and the previous version stays live — run `npm run typecheck` before pushing.
 
 5. Open **Advanced** → **Health Check Path** → `/healthz`.
 6. **Deploy Web Service**. Watch **Logs**; it's ready when you see
-   `Schooling running on http://localhost:10000` (Render's port) and the status says **Live**.
+   `Schooling listening on port 10000` (Render's port) and the status says **Live**.
 7. Open the link at the top. No Redirects/Rewrites rule is needed — the server
    already sends every page to the app.
 

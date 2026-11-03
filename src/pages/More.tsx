@@ -52,6 +52,12 @@ export default function More() {
             <ThemePicker value={choice} onChange={setChoice} />
           </li>
           <li>
+            <Link to="/privacy" className="more-link">
+              <Icon name="file" />
+              <span>Privacy</span>
+            </Link>
+          </li>
+          <li>
             <button
               type="button"
               className="more-link"

@@ -6,6 +6,10 @@ import { supabase, unwrap } from '../lib/supabase';
 const BUCKET = 'class-files';
 export const MAX_FILE_MB = 20;
 
+// Same list as the bucket's allowed types (supabase/migrations/20261103020000_lock_helpers.sql).
+export const ACCEPTED_FILES =
+  '.pdf,.png,.jpg,.jpeg,.gif,.webp,.heic,.txt,.csv,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods,.zip';
+
 function safeName(name: string) {
   return name.replace(/[^\w.\-]+/g, '_').slice(-80) || 'file';
 }

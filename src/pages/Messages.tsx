@@ -55,7 +55,7 @@ export default function Messages() {
           <input
           id="people-search"
           type="search"
-          placeholder="Find someone by name or username"
+          placeholder="Find someone"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           />

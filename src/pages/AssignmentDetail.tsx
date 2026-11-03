@@ -13,9 +13,9 @@ import {
   submitWork,
   withdrawSubmission,
 } from '../data/coursework';
-import { MAX_FILE_MB, openClassFile } from '../data/files';
+import { ACCEPTED_FILES, MAX_FILE_MB, openClassFile } from '../data/files';
 import type { Assignment, Submission } from '../data/types';
-import { confirmDelete, formatDateTime } from '../lib/format';
+import { confirmDelete, formatDateTime, formatDue } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
 import NotFound from './NotFound';
 
@@ -47,7 +47,7 @@ export default function AssignmentDetail() {
       </p>
       <h1 className="page-title">{assignment.title}</h1>
       <p className={late ? 'due due-late' : 'due'}>
-        {assignment.due_at ? `Due ${formatDateTime(assignment.due_at)}` : 'No due date'}
+        {assignment.due_at ? `Due ${formatDue(assignment.due_at)}` : 'No due date'}
       </p>
       {assignment.description && <p className="announcement-text">{assignment.description}</p>}
 
@@ -134,7 +134,7 @@ function MyWork({ assignment }: { assignment: Assignment }) {
           </label>
           <label className="field">
             {mine?.file_path ? 'Replace file' : 'Attach a file'} <span className="optional">(up to {MAX_FILE_MB} MB)</span>
-            <input name="file" type="file" />
+            <input name="file" type="file" accept={ACCEPTED_FILES} />
           </label>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={action.busy}>
@@ -179,12 +179,18 @@ function ClassSubmissions({ assignment }: { assignment: Assignment }) {
 
   return (
     <div>
-      <div className="stat-row">
-        <div className="stat"><strong className="tone-good">{handedIn}</strong><small>handed in</small></div>
-        <div className="stat"><strong className="tone-bad">{Math.max(0, data.members.length - handedIn)}</strong><small>not handed in</small></div>
-        <div className="stat"><strong className="tone-primary">{data.submissions.filter((s) => s.grade).length}</strong><small>graded</small></div>
-      </div>
       <h2 className="section-title">Submissions</h2>
+      <p className="summary-line">
+        <strong className="tone-good">{handedIn} of {data.members.length} handed in</strong>
+        <span aria-hidden="true"> · </span>
+        <span>{data.submissions.filter((s) => s.grade).length} graded</span>
+        {data.members.length > handedIn && (
+          <>
+            <span aria-hidden="true"> · </span>
+            <span className="tone-bad">{data.members.length - handedIn} still to hand in</span>
+          </>
+        )}
+      </p>
       <ErrorNote error={action.error} />
       {data.members.length === 0 ? (
         <Empty>No students in this class yet.</Empty>

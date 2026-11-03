@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
 import Announcements from '../components/Announcements';
@@ -8,7 +9,9 @@ import MaterialList from '../components/MaterialList';
 import { Empty, ErrorNote, Loading } from '../components/ui';
 import { deleteClass, getClass, listMembers, removeMember } from '../data/classes';
 import type { ClassRoom } from '../data/types';
-import { confirmDelete } from '../lib/format';
+import { listSlots } from '../data/schedule';
+import type { TimetableSlot } from '../data/types';
+import { WEEKDAYS, confirmDelete, formatTime } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
 import NotFound from './NotFound';
 
@@ -26,6 +29,8 @@ export default function Classroom() {
   const [params, setParams] = useSearchParams();
   const user = useUser();
   const { data: room, loading, error } = useLoad(() => getClass(id), [id]);
+  const { data: slots = [] } = useLoad(listSlots, []);
+  const next = nextLesson(slots.filter((s) => s.class_id === id));
 
   const tab: TabId = TABS.some((t) => t.id === params.get('tab')) ? (params.get('tab') as TabId) : 'stream';
 
@@ -43,11 +48,16 @@ export default function Classroom() {
           <p className="class-banner-meta">
             {[room.subject, room.teacher?.full_name].filter(Boolean).join(' · ')}
           </p>
+          {next && (
+            <p className="class-banner-next">
+              <span>Next lesson</span>
+              <span>· {next.when} {formatTime(next.slot.starts_at)}–{formatTime(next.slot.ends_at)}</span>
+              {next.slot.room && <span>· Room {next.slot.room}</span>}
+            </p>
+          )}
         </div>
         {teaches && (
-          <p className="join-code">
-            <span>Class code</span> <strong>{room.join_code}</strong>
-          </p>
+          <JoinCode code={room.join_code} />
         )}
       </div>
 
@@ -72,6 +82,49 @@ export default function Classroom() {
         {tab === 'people' && <People room={room} teaches={teaches} />}
       </div>
     </section>
+  );
+}
+
+// The class's next lesson from now: later today, or the next day it meets.
+function nextLesson(slots: TimetableSlot[]) {
+  if (slots.length === 0) return null;
+  const now = new Date();
+  const today = ((now.getDay() + 6) % 7) + 1;
+  const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  for (let i = 0; i < 8; i++) {
+    const d = ((today - 1 + i) % 7) + 1;
+    const found = slots
+      .filter((s) => s.weekday === d && (i > 0 || s.ends_at.slice(0, 5) > hhmm))
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
+    if (found) {
+      const when = i === 0 ? (found.starts_at.slice(0, 5) <= hhmm ? 'Now' : 'Today') : i === 1 ? 'Tomorrow' : WEEKDAYS[d - 1];
+      return { slot: found, when };
+    }
+  }
+  return null;
+}
+
+// The code students type on their Classes page, with a one-tap copy.
+function JoinCode({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked: the code is on screen to copy by hand.
+    }
+  }
+  return (
+    <div className="join-code">
+      <span>Class code</span>
+      <strong>{code}</strong>
+      <button type="button" className="join-code-copy" onClick={copy} aria-label={`Copy class code ${code}`}>
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+      <span className="visually-hidden" role="status">{copied ? 'Class code copied' : ''}</span>
+    </div>
   );
 }
 

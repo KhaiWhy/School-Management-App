@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useUser } from '../auth/AuthContext';
 import { addMaterial, deleteMaterial, listMaterials } from '../data/coursework';
-import { MAX_FILE_MB, openClassFile } from '../data/files';
+import { ACCEPTED_FILES, MAX_FILE_MB, openClassFile } from '../data/files';
 import { confirmDelete, formatDate } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
 import Icon from './Icon';
@@ -113,7 +113,7 @@ function NewMaterial({ classId, onDone, onCancel }: { classId?: string; onDone: 
       </label>
       <label className="field">
         File <span className="optional">(up to {MAX_FILE_MB} MB)</span>
-        <input name="file" type="file" />
+        <input name="file" type="file" accept={ACCEPTED_FILES} />
       </label>
       <label className="field">
         Or a link <span className="optional">(optional)</span>

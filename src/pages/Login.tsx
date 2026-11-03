@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import * as auth from '../data/auth';
 import { useAction } from '../lib/useLoad';
@@ -136,6 +136,7 @@ export default function Login() {
             </button>
           </form>
         )}
+        <p className="login-note"><Link to="/privacy">Privacy</Link></p>
       </div>
     </main>
   );

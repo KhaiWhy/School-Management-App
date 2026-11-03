@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, useUser } from '../auth/AuthContext';
 import { listMyClasses } from '../data/classes';
 import type { ClassRoom, Role } from '../data/types';
@@ -55,6 +55,15 @@ const TABS: NavItem[] = [
   { to: '/more', label: 'More', icon: 'more' },
 ];
 
+// Pages without their own menu item still show where you are:
+// a class page lights up Classes; on phones, anything not in the tab bar lights up More.
+const TAB_PATHS = ['/classes', '/classroom', '/assignments', '/messages'];
+function alsoActive(to: string, pathname: string) {
+  if (to === '/classes') return pathname.startsWith('/classroom');
+  if (to === '/more') return pathname !== '/' && !TAB_PATHS.some((p) => pathname.startsWith(p));
+  return false;
+}
+
 const ROLE_LABEL: Record<Role, string> = { student: 'Student', teacher: 'Teacher', admin: 'Admin' };
 
 // Lets any page refresh the classroom list (after creating, joining or leaving a class).
@@ -81,6 +90,7 @@ export default function Layout() {
   const { signOut } = useAuth();
   const user = useUser();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { data: classes = [], reload: reloadClasses } = useLoad(listMyClasses, [user.id]);
   const name = user.full_name || user.username;
 
@@ -117,7 +127,12 @@ export default function Layout() {
                 <ul>
                   {g.items.map((item) => (
                     <li key={item.to}>
-                      <NavLink to={item.to} end={item.end} className="rail-link">
+                      <NavLink
+                        to={item.to}
+                        end={item.end}
+                        title={item.label}
+                        className={({ isActive }) => (isActive || alsoActive(item.to, pathname) ? 'rail-link active' : 'rail-link')}
+                      >
                         <Icon name={item.icon} />
                         <span>{item.label}</span>
                       </NavLink>
@@ -170,7 +185,12 @@ export default function Layout() {
 
         <nav className="tabbar" aria-label="Main (phone)">
           {TABS.map((t) => (
-            <NavLink key={t.to} to={t.to} end={t.end} className="tabbar-link">
+            <NavLink
+              key={t.to}
+              to={t.to}
+              end={t.end}
+              className={({ isActive }) => (isActive || alsoActive(t.to, pathname) ? 'tabbar-link active' : 'tabbar-link')}
+            >
               <Icon name={t.icon} size={22} />
               <span>{t.label}</span>
             </NavLink>

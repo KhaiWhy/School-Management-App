@@ -1,20 +1,61 @@
 import { Link } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
 import Announcements from '../components/Announcements';
+import { ErrorNote, Loading } from '../components/ui';
 import { listAssignments, listSubmissions } from '../data/coursework';
 import { listEvents, listSlots } from '../data/schedule';
-import { formatDate, formatDateTime, formatTime, isStaff, today } from '../lib/format';
+import type { TimetableSlot } from '../data/types';
+import { WEEKDAYS, formatDate, formatDue, formatTime, isStaff, today } from '../lib/format';
 import { useLoad } from '../lib/useLoad';
+
+function nowHHMM() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 
+const todayNumber = () => ((new Date().getDay() + 6) % 7) + 1; // 1 = Monday
+
+// Which lessons the strip shows: today's while any are left, otherwise the next school day's.
+function pickDay(slots: TimetableSlot[]) {
+  const t = nowHHMM();
+  const day = todayNumber();
+  const todays = slots.filter((s) => s.weekday === day);
+  if (todays.some((s) => s.ends_at.slice(0, 5) > t)) return { label: 'Today', lessons: todays, isToday: true };
+  for (let i = 1; i <= 7; i++) {
+    const d = ((day - 1 + i) % 7) + 1;
+    const lessons = slots.filter((s) => s.weekday === d);
+    if (lessons.length) return { label: i === 1 ? 'Tomorrow' : WEEKDAYS[d - 1], lessons, isToday: false };
+  }
+  return null;
+}
+
+// 'next' is filled when nothing is on now; 'next-quiet' is only labelled (a lesson is on now).
+type LessonState = 'now' | 'next' | 'next-quiet' | 'done' | 'later';
+
+function lessonStates(lessons: TimetableSlot[], isToday: boolean): LessonState[] {
+  const t = nowHHMM();
+  let nextGiven = false;
+  const onNow = isToday && lessons.some((s) => s.starts_at.slice(0, 5) <= t && t < s.ends_at.slice(0, 5));
+  return lessons.map((s) => {
+    if (isToday && s.ends_at.slice(0, 5) <= t) return 'done';
+    if (isToday && s.starts_at.slice(0, 5) <= t) return 'now';
+    if (!nextGiven) {
+      nextGiven = true;
+      return onNow ? 'next-quiet' : 'next';
+    }
+    return 'later';
+  });
+}
+
 export default function Home() {
   const user = useUser();
   const staff = isStaff(user.role);
-  const { data } = useLoad(async () => {
+  const { data, loading, error } = useLoad(async () => {
     const [assignments, submissions, events, slots] = await Promise.all([
       listAssignments(),
       staff ? Promise.resolve([]) : listSubmissions(),
@@ -23,9 +64,8 @@ export default function Home() {
     ]);
     const done = new Set(submissions.map((s) => s.assignment_id));
     const now = Date.now();
-    const weekday = ((new Date().getDay() + 6) % 7) + 1;
     return {
-      lessons: slots.filter((s) => s.weekday === weekday),
+      slots,
       dueSoon: assignments
         .filter((a) => a.due_at && new Date(a.due_at).getTime() > now && !done.has(a.id))
         .slice(0, 4),
@@ -34,30 +74,47 @@ export default function Home() {
   }, [staff]);
 
   const name = user.full_name || user.username;
-  const lessonCount = data?.lessons.length ?? 0;
+  const strip = data ? pickDay(data.slots) : null;
+  const states = strip ? lessonStates(strip.lessons, strip.isToday) : [];
+  const todayCount = data ? data.slots.filter((s) => s.weekday === todayNumber()).length : 0;
 
   return (
     <div className="page page-wide">
       <div className="greeting">
         <h1 className="page-title">{greeting()}, {name}</h1>
         <p className="muted">
-          {formatDate(today(), { weekday: 'long', day: 'numeric', month: 'long' })}
-          {data ? ` · ${lessonCount === 0 ? 'No lessons today' : `${lessonCount} ${lessonCount === 1 ? 'lesson' : 'lessons'} today`}` : ''}
+          {formatDate(today())}
+          {data && strip?.isToday && ` · ${todayCount} ${todayCount === 1 ? 'lesson' : 'lessons'} today`}
+          {data && !strip?.isToday && (todayCount === 0 ? ' · No lessons today' : ' · No more lessons today')}
         </p>
       </div>
 
-      {data && data.lessons.length > 0 && (
-        <ul className="today-strip" aria-label="Today's lessons">
-          {data.lessons.map((s) => (
-            <li key={s.id}>
-              <Link to={`/classroom/${s.class_id}`} className="lesson">
-                <span className="lesson-time">{formatTime(s.starts_at)}–{formatTime(s.ends_at)}</span>
-                <strong className="lesson-name">{s.class?.name}</strong>
-                {s.room && <span className="lesson-room">Room {s.room}</span>}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <ErrorNote error={error} />
+      {loading && !data && <Loading />}
+
+      {strip && (
+        <section className="today" aria-labelledby="today-title">
+          <h2 id="today-title" className="today-title">{strip.label}</h2>
+          <ul className="today-strip">
+            {strip.lessons.map((s, i) => {
+              const state = states[i];
+              return (
+                <li key={s.id}>
+                  <Link to={`/classroom/${s.class_id}`} className={`lesson lesson-${state}`}>
+                    <span className="lesson-time">
+                      {state === 'now' && <span className="lesson-flag">Now</span>}
+                      {(state === 'next' || state === 'next-quiet') && <span className="lesson-flag">Next</span>}
+                      {state === 'done' && <span className="lesson-done-label">Done</span>}
+                      {formatTime(s.starts_at)}–{formatTime(s.ends_at)}
+                    </span>
+                    <strong className="lesson-name">{s.class?.name}</strong>
+                    {s.room && <span className="lesson-room">Room {s.room}</span>}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       <div className="home-grid">
@@ -73,7 +130,7 @@ export default function Home() {
                 {data.dueSoon.map((a) => (
                   <li key={a.id}>
                     <Link to={`/assignments/${a.id}`}>{a.title}</Link>
-                    <small>{a.class?.name} · {formatDateTime(a.due_at!)}</small>
+                    <small>{a.class?.name} · {formatDue(a.due_at!)}</small>
                   </li>
                 ))}
               </ul>
@@ -94,7 +151,7 @@ export default function Home() {
                     </span>
                     <span>
                       <Link to="/calendar">{e.title}</Link>
-                      <small>{formatDate(e.starts_on, { month: 'short', day: 'numeric' })}</small>
+                      <small>{formatDate(e.starts_on)}{e.ends_on && e.ends_on !== e.starts_on ? ` – ${formatDate(e.ends_on)}` : ''}</small>
                     </span>
                   </li>
                 ))}

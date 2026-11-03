@@ -31,7 +31,7 @@ Open http://localhost:5173. For username sign-in while developing, run
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm start` | Serve `dist/` + the API (what Render runs) |
 | `npm run typecheck` | Type-check only |
-| `npm run test:db` | Check all 102 database access rules locally |
+| `npm run test:db` | Check all 106 database access rules locally |
 
 Deploying: [DEPLOY.md](DEPLOY.md).
 
@@ -59,16 +59,22 @@ Deploying: [DEPLOY.md](DEPLOY.md).
 | `src/styles.css` | All styles |
 | `supabase/migrations/` | The database: tables, rules, storage |
 | `supabase/tests/` | Database rule checks (`npm run test:db`) |
+| `DESIGN.md` | Colours, type, layout and the reasons behind them (Figma file: "WDS — Khai — School-Management-App") |
+| `src/pages/Privacy.tsx` | Public privacy page; keep it matching what the app stores and loads |
 | `server.mjs` | Express server for Render |
 | `legacy/` | The original HTML/CSS version, kept for reference |
 
 ## Adding a page
 1. Make `src/pages/MyPage.tsx`.
 2. Add a `<Route>` for it in `src/App.tsx`.
-3. Add a link to the `NAV` list in `src/components/Layout.tsx`
+3. Add a link to `NAV_GROUPS` in `src/components/Layout.tsx`
    (add `roles: ['teacher', 'admin']` to limit who sees it).
 4. Database calls go in a file in `src/data/`; new tables in a new file in
    `supabase/migrations/` with rules, plus checks in `supabase/tests/rls.test.mjs`.
+
+## Look and feel
+Palette "Classroom Blue" (evolves the blue and cyan from the first HTML version), light and dark
+mode (toggle in the top bar; Profile → Appearance has Light / Dark / System). Rules in DESIGN.md.
 
 ## Not built yet
 - Email alerts for new announcements.

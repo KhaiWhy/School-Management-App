@@ -75,7 +75,6 @@ function TakeRegister() {
             >
               Mark the rest present
             </button>
-            <small className="hint">{unmarked ? `${unmarked} not marked` : 'Everyone marked'}</small>
           </div>
           <ul className="register">
             {members.map(({ profile }) => (
@@ -105,11 +104,16 @@ function TakeRegister() {
               </li>
             ))}
           </ul>
-          <div className="form-actions">
+          {/* Pinned to the bottom of the screen so it's always in reach. */}
+          <div className="form-actions register-save">
             <button type="button" className="btn btn-primary" onClick={save} disabled={action.busy || Object.keys(marks).length === 0}>
               {action.busy ? 'Saving…' : 'Save register'}
             </button>
-            {saved && <span className="notice-inline" role="status">Saved for {formatDate(date)}.</span>}
+            {saved ? (
+              <span className="notice-inline" role="status">Saved for {formatDate(date)}.</span>
+            ) : (
+              <span className="muted">{unmarked ? `${unmarked} not marked` : 'Everyone marked'}</span>
+            )}
           </div>
         </>
       )}
