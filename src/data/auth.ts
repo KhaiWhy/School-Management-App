@@ -13,38 +13,18 @@ export async function signUp({ fullName, email, password }: { fullName: string; 
   return { signedIn: Boolean(data.session) };
 }
 
-// Sign in with an email, or with a username (looked up by our server so emails stay private).
+// Sign in with an email, or with a username. For a username, the database checks the
+// password first and only then hands back the email (supabase/migrations/*_username_signin.sql),
+// so emails stay private and no server secret is needed.
 export async function signIn(login: string, password: string) {
   const value = login.trim();
-  if (value.includes('@')) {
-    unwrap(await supabase.auth.signInWithPassword({ email: value, password }));
-    return;
+  let email = value;
+  if (!value.includes('@')) {
+    const found: string | null = unwrap(await supabase.rpc('email_for_sign_in', { name: value, password }));
+    if (!found) throw new Error('Wrong username or password.');
+    email = found;
   }
-
-  let response: Response;
-  try {
-    response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: value, password }),
-    });
-  } catch {
-    throw new Error('Could not reach the server. Check your connection and try again.');
-  }
-  if (response.status === 404) {
-    throw new Error('Username sign-in is not available here yet. Sign in with your email instead.');
-  }
-  const body = (await response.json().catch(() => ({}))) as {
-    error?: string;
-    access_token?: string;
-    refresh_token?: string;
-  };
-  if (!response.ok || !body.access_token || !body.refresh_token) {
-    throw new Error(body.error ?? 'Wrong username or password.');
-  }
-  unwrap(
-    await supabase.auth.setSession({ access_token: body.access_token, refresh_token: body.refresh_token }),
-  );
+  unwrap(await supabase.auth.signInWithPassword({ email, password }));
 }
 
 export async function signOut() {

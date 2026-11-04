@@ -1,0 +1,3 @@
+# Schooling is a private school app behind sign-in: please don't index it.
+User-agent: *
+Disallow: /

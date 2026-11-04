@@ -7,7 +7,7 @@ export default function SetupNeeded() {
         <p className="login-lead">The app isn't connected to its database yet.</p>
         <ol className="setup-steps">
           <li>
-            Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to <code>.env.local</code>{' '}
+            Add <code>SUPABASE_URL</code> and <code>SUPABASE_PUBLISHABLE_KEY</code> to <code>.env.local</code>{' '}
             (on your computer) or to Render → Environment (live site).
           </li>
           <li>Restart <code>npm run dev</code>, or redeploy on Render with "Clear build cache".</li>

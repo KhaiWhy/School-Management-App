@@ -1,116 +1,98 @@
 # Deploying to Render
 
-Two ways. Both build the same app; pick one.
+The app needs exactly **two settings**, both safe to be public (Row Level Security in the
+database protects the data):
 
-| | **Web Service** (recommended now) | Static Site (what's live today) |
-|---|---|---|
-| What runs | `server.mjs` (Node + Express) serves the app | Render serves the built files |
-| Sign in with **username** | Yes | No — email only |
-| Price | Free (sleeps after 15 min idle; first visit then takes ~1 min) or Starter ~$7/month (always on) | Free, always on |
-| Secret key | `SUPABASE_SERVICE_ROLE_KEY` lives on the server | Not needed |
+| Key | Value (Supabase → Project Settings → API Keys) |
+|---|---|
+| `SUPABASE_URL` | Project URL, e.g. `https://abcd1234.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | the **publishable** key (`sb_publishable_…`) |
 
-Before either: Supabase is set up (SUPABASE-SETUP.md) and the code is pushed to
-`KhaiWhy/School-Management-App` on `main`. `npm run build` works on your computer.
-The build type-checks the `.ts`/`.tsx` files first, so a type error fails the deploy
-and the previous version stays live — run `npm run typecheck` before pushing.
+No secret keys anywhere: username sign-in is checked inside the database.
 
----
-
-## A. Web Service (Node + Express)
-
-1. https://dashboard.render.com → **New +** → **Web Service**.
-2. **Git Provider** → pick `School-Management-App` (click **Configure account** if
-   it isn't listed and allow that repo).
-3. Fill in:
-
-   | Field | Value |
-   |---|---|
-   | Name | `school-management-app` (becomes `https://<name>.onrender.com`; if the static site already uses this name, pick another, e.g. `schooling-app`) |
-   | Language | **Node** |
-   | Branch | `main` |
-   | Region | the one closest to the school (e.g. Singapore) |
-   | Root Directory | leave empty |
-   | Build Command | `npm ci --include=dev && npm run build` |
-   | Start Command | `npm start` |
-   | Instance Type | **Free** to test; **Starter** when the school uses it (no sleeping) |
-
-   `--include=dev` matters: the build needs TypeScript and Vite, which are dev tools.
-
-4. **Environment Variables** → **Add Environment Variable**, add four:
-
-   | Key | Value |
-   |---|---|
-   | `VITE_SUPABASE_URL` | Supabase Project URL |
-   | `VITE_SUPABASE_ANON_KEY` | Supabase anon / publishable key |
-   | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service_role / secret key |
-   | `NODE_VERSION` | `22` |
-
-   Don't add `PORT` — Render sets it.
-
-5. Open **Advanced** → **Health Check Path** → `/healthz`.
-6. **Deploy Web Service**. Watch **Logs**; it's ready when you see
-   `Schooling listening on port 10000` (Render's port) and the status says **Live**.
-7. Open the link at the top. No Redirects/Rewrites rule is needed — the server
-   already sends every page to the app.
-
-### Check it
-- `https://<your-app>.onrender.com/healthz` shows `{"ok":true}`.
-- Create an account, sign out, sign in with the **username** shown on your Profile page.
-- Open `/timetable` directly and refresh: it loads.
-
-### Switching from the static site
-1. Make the Web Service as above and check it.
-2. In Supabase → **Authentication** → **URL Configuration**, set **Site URL** to the new
-   address and add `https://<new-address>/**` to **Redirect URLs**.
-3. Delete the old static site (its **Settings** → bottom → **Delete Static Site**),
-   or keep it as a backup.
+Before you start: Supabase is set up (SUPABASE-SETUP.md, all migrations run), the code is
+pushed to `KhaiWhy/School-Management-App` on `main`, and `npm run build` works on your
+computer. The build type-checks the `.ts`/`.tsx` files first, so a type error fails the
+deploy and the previous version stays live — run `npm run typecheck` before pushing.
 
 ---
 
-## B. Static Site (no server)
+## A. Static Site (recommended — free, always on)
 
-1. **New +** → **Static Site** → pick `School-Management-App`.
+**Already have the static site from the first meeting?** Skip to step 3 and just change its
+settings.
+
+1. https://dashboard.render.com → **New +** → **Static Site** → pick `School-Management-App`
+   (click **Configure account** if it isn't listed and allow that repo).
 2. Fill in:
 
    | Field | Value |
    |---|---|
+   | Name | `school-management-app` (becomes `https://<name>.onrender.com`) |
    | Branch | `main` |
    | Root Directory | leave empty |
    | Build Command | `npm ci && npm run build` |
    | Publish Directory | `dist` |
 
-3. **Environment** → add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` only.
-   (Never the service-role key: a static site can't keep a secret.)
-4. **Create Static Site**.
-5. **Redirects/Rewrites** → **Add Rule**: Source `/*`, Destination `/index.html`,
-   Action **Rewrite** → **Save Changes**. Without it, refreshing any page except
-   the home page gives "Not Found".
+3. **Environment** → add the two keys from the table above. Remove any old
+   `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` entries.
+4. **Redirects/Rewrites** → **Add Rule**: Source `/*`, Destination `/index.html`,
+   Action **Rewrite** → **Save Changes**. Without it, refreshing any page except the home
+   page gives "Not Found".
+5. **Manual Deploy** → **Clear build cache & deploy** (the two values are built into the
+   app, so a plain redeploy isn't enough after changing them).
+6. Open the `.onrender.com` link.
 
-People sign in with their **email** here; the username box shows a message saying so.
+Or let Render read `render.yaml` instead of steps 1–4: **New +** → **Blueprint** → pick the
+repo → it asks for the two keys → **Apply**.
+
+### Check it
+- The sign-in page opens (not "The app isn't connected to its database yet").
+- Sign in with your **username** and with your **email** — both work.
+- Open `/timetable` directly and refresh: it loads.
+- `/privacy` opens without signing in.
+
+### After the first deploy
+In Supabase → **Authentication** → **URL Configuration**: set **Site URL** to the Render
+address and add `https://<your-address>/**` to **Redirect URLs** (needed for "Forgot your
+password?" emails).
 
 ---
 
-## After any change to the keys
-Vite builds the `VITE_` values into the app, so after adding or changing them:
-**Manual Deploy** → **Clear build cache & deploy**.
+## B. Web Service (optional)
+
+Only if you later want a Node server in front (it adds nothing today). `server.mjs` serves
+the built app and needs no secrets.
+
+| Field | Value |
+|---|---|
+| Language | Node |
+| Build Command | `npm ci --include=dev && npm run build` |
+| Start Command | `npm start` |
+| Environment | the same two keys, plus `NODE_VERSION` = `22` |
+| Health Check Path | `/healthz` |
+
+No rewrite rule needed — the server sends every page to the app. Free instances sleep
+after 15 minutes idle (first visit then takes about a minute); Starter (~$7/month) doesn't.
+
+---
 
 ## Updating the site
-Push to `main`. Render rebuilds on its own (see **Events**). A failed build keeps the
-last good version live.
+Push to `main`. Render rebuilds on its own (see **Events**). A failed build keeps the last
+good version live. After changing either key: **Clear build cache & deploy**.
 
 ## Custom domain
-**Settings** → **Custom Domains** → **Add Custom Domain**, then add the DNS record
-Render shows at the domain provider. HTTPS is automatic. Afterwards add the new
-address to Supabase **Site URL** and **Redirect URLs**.
+**Settings** → **Custom Domains** → **Add Custom Domain**, then add the DNS record Render
+shows at the domain provider. HTTPS is automatic. Afterwards add the new address to
+Supabase **Site URL** and **Redirect URLs**.
 
 ## If something goes wrong
 | What you see | Fix |
 |---|---|
-| Build fails: `tsc: not found` / `vite: not found` | Build command must be `npm ci --include=dev && npm run build` (Web Service) |
+| "The app isn't connected to its database yet" | `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` missing or misspelt → fix, **Clear build cache & deploy** |
+| Username sign-in says "Wrong username or password" but email works | The migration `20261103030000_username_signin.sql` hasn't been run in Supabase |
+| "Too many attempts" | 10 wrong passwords for that username in 15 minutes; wait, or sign in with the email |
+| Pages 404 on refresh (Static Site) | The `/*` → `/index.html` rewrite is missing |
 | Build fails with a TypeScript error | Run `npm run typecheck` locally, fix, push |
 | `npm ci` lock-file error | Run `npm install` locally, commit `package-lock.json`, push |
-| "The app isn't connected to its database yet" | `VITE_` keys missing → add them, **Clear build cache & deploy** |
-| Username sign-in: "not set up yet" | `SUPABASE_SERVICE_ROLE_KEY` missing on the Web Service |
-| Web Service very slow on first visit | Free instances sleep after 15 min; upgrade to Starter for the school |
-| Static Site: pages 404 on refresh | The `/*` → `/index.html` rewrite is missing |
-| Deploy "failed health check" | Health Check Path must be `/healthz`; check **Logs** for a crash |
+| Web Service: `tsc: not found` | Build command must be `npm ci --include=dev && npm run build` |

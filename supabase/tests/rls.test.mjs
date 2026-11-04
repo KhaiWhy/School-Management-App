@@ -3,6 +3,7 @@
 // (auth.users, auth.uid(), storage, the anon/authenticated/service_role roles).
 // Run: npm run test:db
 import { PGlite } from '@electric-sql/pglite';
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { readFileSync, readdirSync } from 'node:fs';
 
 const dir = new URL('../migrations/', import.meta.url);
@@ -11,14 +12,16 @@ const migration = readdirSync(dir)
   .sort()
   .map((f) => readFileSync(new URL(f, dir), 'utf8'))
   .join(';\n');
-const db = new PGlite();
+const db = new PGlite({ extensions: { pgcrypto } });
 
 await db.exec(`
   create role authenticated nologin;
   create role anon nologin;
   create role service_role nologin;
   create schema auth;
-  create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+  create schema extensions;
+  create extension pgcrypto with schema extensions;
+  create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', encrypted_password text);
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
@@ -42,9 +45,11 @@ await db.exec(migration);
 const ids = {};
 for (const [key, n] of Object.entries({ A: 1, T: 2, T2: 3, S1: 4, S2: 5, S3: 6 })) {
   ids[key] = `00000000-0000-0000-0000-00000000000${n}`;
-  await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)`, [
-    ids[key], `${key.toLowerCase()}@school.test`, { full_name: key, role: 'admin' },
-  ]);
+  await db.query(
+    `insert into auth.users (id, email, raw_user_meta_data, encrypted_password)
+     values ($1, $2, $3, extensions.crypt('pass-' || $4, extensions.gen_salt('bf', 4)))`,
+    [ids[key], `${key.toLowerCase()}@school.test`, { full_name: key, role: 'admin' }, key],
+  );
 }
 // SQL Editor (no signed-in user) promotes staff.
 await db.query(`update public.profiles set role = 'admin' where id = $1`, [ids.A]);
@@ -101,10 +106,19 @@ const byId = Object.fromEntries(names.rows.map((r) => [r.id, r.username]));
 check('username from email', byId[ids.S1] === 's10');
 check('short username padded', byId[ids.A] === 'a00');
 check('duplicate username gets a number', byId['00000000-0000-0000-0000-000000000009'] === 's102');
-await denied('browser cannot look up emails (signed in)', 'S1', `select public.email_for_username('s2')`);
-await denied('browser cannot look up emails (anon)', 'ANON', `select public.email_for_username('s2')`);
-const lookup = await ok('server looks up email', 'SERVICE', `select public.email_for_username(' S20 ') as email`);
-check('lookup returns the email', lookup && lookup.rows[0].email === 's2@school.test');
+// Username sign-in: the email comes back only with the right password.
+const right = await ok('right password gives the email', 'ANON', `select public.email_for_sign_in(' S20 ', 'pass-S2') as email`);
+check('email returned', right && right.rows[0].email === 's2@school.test');
+const wrong = await ok('wrong password', 'ANON', `select public.email_for_sign_in('s20', 'nope') as email`);
+check('wrong password gives nothing', wrong && wrong.rows[0].email === null);
+const nobody = await ok('unknown user', 'ANON', `select public.email_for_sign_in('nobody', 'pass-S2') as email`);
+check('unknown user gives nothing', nobody && nobody.rows[0].email === null);
+await denied('old server lookup is gone', 'SERVICE', `select public.email_for_username('s20')`);
+await denied('nobody reads sign-in attempts', 'ANON', `select * from public.sign_in_attempts`);
+for (let i = 0; i < 10; i++) await as('ANON', `select public.email_for_sign_in('t00', 'wrong')`);
+await denied('11th try in 15 minutes is blocked, even with the right password', 'ANON', `select public.email_for_sign_in('t00', 'pass-T')`);
+const other = await ok('other users unaffected by the block', 'ANON', `select public.email_for_sign_in('s30', 'pass-S3') as email`);
+check('other user still signs in', other && other.rows[0].email === 's3@school.test');
 await ok('student changes username', 'S1', `update public.profiles set username = 'Sam.Tan' where id = $1`, [ids.S1]);
 const renamed = await db.query(`select username from public.profiles where id = $1`, [ids.S1]);
 check('username lowercased', renamed.rows[0].username === 'sam.tan');

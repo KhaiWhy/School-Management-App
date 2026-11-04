@@ -21,17 +21,16 @@ cp .env.example .env.local   # then fill in the Supabase keys
 npm run dev
 ```
 
-Open http://localhost:5173. For username sign-in while developing, run
-`npm run server` in a second terminal.
+Open http://localhost:5173. The app reads exactly two settings, `SUPABASE_URL` and
+`SUPABASE_PUBLISHABLE_KEY` (both public; see `.env.example`).
 
 | Command | Does |
 |---|---|
 | `npm run dev` | App with live reload |
-| `npm run server` | Express server on :3000 (username sign-in), reads `.env.local` |
 | `npm run build` | Type-check, then build to `dist/` |
-| `npm start` | Serve `dist/` + the API (what Render runs) |
+| `npm start` | Serve `dist/` with Node (only for a Render Web Service; a Static Site doesn't need it) |
 | `npm run typecheck` | Type-check only |
-| `npm run test:db` | Check all 106 database access rules locally |
+| `npm run test:db` | Check all 113 database rules locally |
 
 Deploying: [DEPLOY.md](DEPLOY.md).
 
@@ -40,8 +39,9 @@ Deploying: [DEPLOY.md](DEPLOY.md).
 - **Back end:** Supabase — Postgres database, sign-in, file storage, live messages.
   Every table has Row Level Security, so the database itself decides who can see or
   change what (see `supabase/migrations/`).
-- **Server:** `server.mjs` (Node + Express) serves the app on Render and does
-  username sign-in, the one step that needs a secret key.
+- **Sign-in:** email or username + password. For a username, a database function checks the
+  password and only then returns the email, so no server secret is needed.
+- **Hosting:** a Render Static Site (`server.mjs` is an optional Node server for a Web Service).
 
 ## Where things are
 | Path | What it is |
@@ -61,7 +61,7 @@ Deploying: [DEPLOY.md](DEPLOY.md).
 | `supabase/tests/` | Database rule checks (`npm run test:db`) |
 | `DESIGN.md` | Colours, type, layout and the reasons behind them (Figma file: "WDS — Khai — School-Management-App") |
 | `src/pages/Privacy.tsx` | Public privacy page; keep it matching what the app stores and loads |
-| `server.mjs` | Express server for Render |
+| `server.mjs` | Optional Node server (Render Web Service); serves the built app, no secrets |
 | `legacy/` | The original HTML/CSS version, kept for reference |
 
 ## Adding a page

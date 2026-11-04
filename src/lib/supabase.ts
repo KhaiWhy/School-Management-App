@@ -1,14 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Values come from .env.local (on your computer) or Render → Environment (live).
-// The anon key is meant to be public; Row Level Security in the database protects the data.
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// The only two settings: SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY, from .env.local (on your
+// computer) or Render → Environment (live); vite.config.ts puts them in. The publishable key
+// is meant to be public; Row Level Security in the database protects the data.
+const url = import.meta.env.SUPABASE_URL as string;
+const publishableKey = import.meta.env.SUPABASE_PUBLISHABLE_KEY as string;
 
-export const isConfigured = Boolean(url && anonKey);
+export const isConfigured = Boolean(url && publishableKey);
 
-// Without keys the app shows SetupNeeded and never calls this placeholder address.
-export const supabase = createClient(url ?? 'https://not-configured.invalid', anonKey ?? 'not-configured');
+// Without them the app shows SetupNeeded and never calls this placeholder address.
+export const supabase = createClient(url || 'https://not-configured.invalid', publishableKey || 'not-configured');
 
 // Turns a Supabase result into data, or throws a readable error.
 // The data functions say what they return (src/data/types.ts), so T comes from there.

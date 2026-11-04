@@ -9,7 +9,6 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "start": "node server.mjs",
-    "server": "node --env-file-if-exists=.env.local server.mjs",
     "test:db": "node supabase/tests/rls.test.mjs"
   },
   "dependencies": {

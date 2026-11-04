@@ -33,6 +33,9 @@ Run it once only. Running it again fails with "already exists" — that's harmle
 4. Then do the same with `supabase/migrations/20261103020000_lock_helpers.sql`: it limits the
    helper functions to signed-in users and sets the allowed file types (PDF, images, Word,
    PowerPoint, Excel, OpenDocument, text, CSV, zip; up to 20 MB). Safe to run again.
+5. And `supabase/migrations/20261103030000_username_signin.sql`: lets people sign in with
+   their **username** (the database checks the password, then hands back the email; 10 wrong
+   tries in 15 minutes blocks that username for a while). Safe to run again.
 
 What it sets up:
 
@@ -62,38 +65,26 @@ What it sets up:
    make anyone a teacher or admin — no more SQL needed.
 
 ## 4. Connect the app
-**Project Settings** → **API** (or the green **Connect** button at the top):
+The app reads exactly **two settings**. From **Project Settings** → **API Keys** (or the
+green **Connect** button at the top):
 
 | Copy | Into |
 |---|---|
-| Project URL | `VITE_SUPABASE_URL` |
-| `anon` / publishable key | `VITE_SUPABASE_ANON_KEY` |
-| `service_role` / secret key | `SUPABASE_SERVICE_ROLE_KEY` (server only, see below) |
+| Project URL | `SUPABASE_URL` |
+| **Publishable** key (`sb_publishable_…`) | `SUPABASE_PUBLISHABLE_KEY` |
 
-**On your computer:** copy `.env.example` to `.env.local`, fill in the three values,
-then:
+Both are meant to be public. The app never needs the secret / `service_role` key — don't
+put it anywhere in this project. (`vite.config.ts` only puts these two names into the
+browser code, so nothing else from `.env.local` can leak into the site.)
+
+**On your computer:** copy `.env.example` to `.env.local`, fill in the two values, then:
 
 ```bash
 npm install
 npm run dev
 ```
 
-For username sign-in while developing, also run the server in a second terminal:
-
-```bash
-npm run server
-```
-
-**On Render:** add the same keys under **Environment** (see DEPLOY.md).
-
-### The secret key
-`SUPABASE_SERVICE_ROLE_KEY` can read and change everything, ignoring every rule above.
-- Only `server.mjs` uses it, to look up the email behind a username.
-- Never put it in a `VITE_` variable (those end up in the browser), in GitHub, or in chat.
-- If it ever leaks: Supabase → Project Settings → API → roll the key, then update Render.
-
-Without it the app still works; people just sign in with their **email** instead of
-their username.
+**On Render:** add the same two keys under **Environment** (see DEPLOY.md).
 
 ## 5. Check it works
 1. Create two accounts (one in a private window). Make one a teacher on **People**.
@@ -106,7 +97,7 @@ their username.
 
 ## Testing the rules without Supabase
 `npm run test:db` runs the database file on a local copy of Postgres and checks
-106 rules (who can read and change what). Run it after changing the SQL.
+113 rules (who can read and change what, and username sign-in). Run it after changing the SQL.
 
 ## Changing the database later
 Add a new file in `supabase/migrations/` (e.g. `20261201000000_add_departments.sql`),
@@ -116,9 +107,10 @@ Never edit the first migration after it has been run on the live project.
 ## Problems
 | What you see | Fix |
 |---|---|
-| "The app isn't connected to its database yet" | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` missing. On Render, add them and redeploy with **Clear build cache** |
+| "The app isn't connected to its database yet" | `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` missing. On Render, add them and redeploy with **Clear build cache** |
 | "Your account has no profile yet" | The SQL wasn't run before that account was made. Run it, then in SQL Editor: `insert into public.profiles (id, full_name, username) select id, '', public.username_from_email(email) from auth.users where id not in (select id from public.profiles);` |
 | "You don't have permission to do that" | Working as intended for that role, or the person isn't a teacher yet (People page) |
-| Username sign-in says "not available" / "not set up" | Use the Web Service deploy with `SUPABASE_SERVICE_ROLE_KEY` set, or sign in with email |
+| Username sign-in always says "Wrong username or password" (email works) | Run `20261103030000_username_signin.sql` in the SQL Editor |
+| "Too many attempts" | 10 wrong passwords for that username in 15 minutes; wait, or sign in with the email |
 | Messages don't appear live | **Database** → **Publications** → `supabase_realtime` → make sure `messages` is on |
 | "Email rate limit exceeded" on password reset | Supabase's built-in email sends only a few per hour. For real use add your own SMTP: **Authentication** → **Emails** → **SMTP Settings** |
