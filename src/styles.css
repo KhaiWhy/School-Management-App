@@ -2800,3 +2800,7 @@ button.more-link:hover {
 .admin-class .people-list {
   margin-top: 8px;
 }
+
+.nowrap {
+  white-space: nowrap;
+}

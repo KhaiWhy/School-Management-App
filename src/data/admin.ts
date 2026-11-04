@@ -43,6 +43,7 @@ const MESSAGES: Record<string, string> = {
   'bad-name': 'School names need 2 to 120 characters.',
   duplicate: 'A school with that name already exists.',
   'not-found': 'That was already changed or removed. Refresh and try again.',
+  weak: 'The new password is too short.',
 };
 
 function fail(status: string): never {
@@ -75,6 +76,14 @@ export const setRole = (passkey: string, target: string, role: 'student' | 'teac
 
 export const setSchool = (passkey: string, target: string, school: string | null) =>
   act('admin_set_school', { passkey, target, school });
+
+// New one-time password for anyone, no email needed. It signs them out everywhere and clears
+// any wrong-password lock; they sign in with it and change it on their Profile.
+export async function resetPassword(passkey: string, target: string): Promise<string> {
+  const password = onetimePassword();
+  await act('admin_reset_password', { passkey, target, new_password: password });
+  return password;
+}
 
 // ---------- Schools ----------
 

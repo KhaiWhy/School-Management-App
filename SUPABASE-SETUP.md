@@ -43,6 +43,8 @@ Run it once only. Running it again fails with "already exists" — that's harmle
 8. And `supabase/migrations/20261105000000_merits_edit_same_school.sql`: students only join
    classes (and get merits) at their own school; teachers can edit the merits they gave and add
    optional details. Safe to run again.
+9. And `supabase/migrations/20261105010000_admin_reset_password.sql`: Reset password on
+   `/admin` → People (no email needed). Safe to run again.
 
 What it sets up:
 
@@ -82,6 +84,10 @@ account.
      away with a one-time password (shown once). Give the teacher their email and that
      password; they sign in on the normal page and change it on Profile. If the email
      already has an account, it becomes a teacher.
+   - **Reset password:** on People, each person has a Reset password button. It makes a
+     one-time password (shown once), signs them out everywhere and clears any wrong-password
+     lock. Use it when someone forgot their password; email reset links need an email (SMTP)
+     service set up in Supabase first.
    - **Schools:** add or rename school names. Students pick theirs when they sign up.
    - **Classes:** every class with its teacher, code and students; remove a student.
 
@@ -123,7 +129,7 @@ npm run dev
 
 ## Testing the rules without Supabase
 `npm run test:db` runs the database file on a local copy of Postgres and checks
-200 rules (who can read and change what, username sign-in, the admin page, schools, teachers, merits and the same-school rule). Run it after changing the SQL.
+209 rules (who can read and change what, username sign-in, the admin page, password reset, schools, teachers, merits and the same-school rule). Run it after changing the SQL.
 
 ## Changing the database later
 Add a new file in `supabase/migrations/` (e.g. `20261201000000_add_departments.sql`),

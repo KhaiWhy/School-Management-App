@@ -21,7 +21,7 @@ await db.exec(`
   create schema auth;
   create schema extensions;
   create extension pgcrypto with schema extensions;
-  create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', encrypted_password text);
+  create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', encrypted_password text, updated_at timestamptz);
   create function auth.uid() returns uuid language sql stable
     as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
@@ -377,6 +377,21 @@ const mem = await ok('admin: class members', 'ANON', `select * from public.admin
 check('admin: members listed', mem && mem.rows.length === 2);
 const rm = await ok('admin: remove member', 'ANON', `select public.admin_remove_member($1, $2, $3) as s`, [PK, classId, ids.S2]);
 check('admin: member removed', rm && rm.rows[0].s === 'ok');
+
+// Admin password reset (no email needed).
+const s2name = (await db.query(`select username from public.profiles where id = $1`, [ids.S2])).rows[0].username;
+for (let i = 0; i < 10; i++) await db.query(`insert into public.sign_in_attempts (username) values ($1)`, [s2name]);
+const signInAs = (pw) => as('ANON', `select public.email_for_sign_in($1, $2) as e`, [s2name, pw]).then((r) => r.rows[0].e, (e) => (/too many/i.test(e.message) ? 'locked' : 'error'));
+check('reset: locked-out user cannot sign in first', (await signInAs('pass-S2')) === 'locked');
+const rp = async (who, key, target, pw) => (await as(who, `select public.admin_reset_password($1, $2, $3) as s`, [key, target, pw])).rows[0].s;
+check('reset: wrong passkey refused', (await rp('ANON', 'nope', ids.S2, 'Brand-new-pass-1')) === 'wrong');
+check('reset: signed-in student without passkey refused', (await rp('S1', 'nope', ids.S2, 'Brand-new-pass-1')) === 'wrong');
+check('reset: short password refused', (await rp('ANON', PK, ids.S2, 'short')) === 'weak');
+check('reset: unknown person', (await rp('ANON', PK, '00000000-0000-0000-0000-0000000000ff', 'Brand-new-pass-1')) === 'not-found');
+check('reset: done with passkey', (await rp('ANON', PK, ids.S2, 'Brand-new-pass-1')) === 'ok');
+check('reset: new password signs in (lock cleared)', (await signInAs('Brand-new-pass-1')) === 's2@school.test');
+check('reset: old password no longer works', (await signInAs('pass-S2')) === null);
+check('reset: not callable with a direct table write', !!(await as('S1', `update auth.users set encrypted_password = 'x' where id = $1`, [ids.S2]).then((r) => r.affectedRows > 0 ? false : true, () => true)));
 
 for (let i = 0; i < 10; i++) await as('ANON', `select public.admin_status('wrong-${i}')`);
 check('admin: locked after 10 wrong passkeys, even the right one', (await st('ANON', PK)) === 'locked');

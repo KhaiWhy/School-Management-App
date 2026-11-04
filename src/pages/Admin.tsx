@@ -127,11 +127,32 @@ function People({ passkey, onLocked }: { passkey: string; onLocked: () => void }
   const { data: people = [], loading, error, reload } = useLoad(() => admin.listPeople(passkey, query), [passkey, query]);
   const { data: schools = [] } = useLoad(() => admin.listSchools(passkey), [passkey]);
   const action = useAction();
+  const [resetDone, setResetDone] = useState<{ name: string; email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   useLockOnBadKey(error ?? action.error, onLocked);
 
   async function change(id: string, name: string, role: 'student' | 'teacher') {
     if (!window.confirm(`Make ${name} a ${role}?`)) return;
     if (await action.run(() => admin.setRole(passkey, id, role))) await reload();
+  }
+
+  async function reset(p: admin.AdminPerson) {
+    const name = p.full_name || p.username;
+    if (!window.confirm(`Reset ${name}'s password? They will be signed out and need the new one-time password to sign in.`)) return;
+    let password = '';
+    if (await action.run(async () => { password = await admin.resetPassword(passkey, p.id); })) {
+      setResetDone({ name, email: p.email, password });
+      setCopied(false);
+    }
+  }
+
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      // Clipboard blocked: the password is on screen to copy by hand.
+    }
   }
 
   async function moveSchool(id: string, school: string) {
@@ -153,8 +174,20 @@ function People({ passkey, onLocked }: { passkey: string; onLocked: () => void }
         </label>
         <button type="submit" className="btn field-row-button">Search</button>
       </form>
-      <p className="hint">Everyone who signs up is a student. Make teacher accounts on the Teachers tab, or change a role here.</p>
+      <p className="hint">Everyone who signs up is a student. Make teacher accounts on the Teachers tab, or change a role here. Reset password gives a new one-time password, for anyone who forgot theirs.</p>
       <ErrorNote error={action.error ?? error} />
+      {resetDone && (
+        <div className="panel new-code" role="status">
+          <p>
+            New password for <strong>{resetDone.name}</strong> ({resetDone.email}). One-time password — copy it now, it won't be shown again:
+          </p>
+          <p className="new-code-value">{resetDone.password}</p>
+          <div className="form-actions">
+            <button type="button" className="btn btn-primary" onClick={() => copy(resetDone.password)}>{copied ? 'Copied' : 'Copy password'}</button>
+            <button type="button" className="btn" onClick={() => setResetDone(null)}>Done</button>
+          </div>
+        </div>
+      )}
       {loading && people.length === 0 ? (
         <Loading />
       ) : people.length === 0 ? (
@@ -169,6 +202,7 @@ function People({ passkey, onLocked }: { passkey: string; onLocked: () => void }
                 <th scope="col">School</th>
                 <th scope="col">Joined</th>
                 <th scope="col">Role</th>
+                <th scope="col"><span className="visually-hidden">Password</span></th>
               </tr>
             </thead>
             <tbody>
@@ -204,6 +238,11 @@ function People({ passkey, onLocked }: { passkey: string; onLocked: () => void }
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
                     </select>
+                  </td>
+                  <td>
+                    <button type="button" className="btn btn-small nowrap" disabled={action.busy} onClick={() => reset(p)}>
+                      Reset password
+                    </button>
                   </td>
                 </tr>
               ))}

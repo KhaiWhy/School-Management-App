@@ -158,6 +158,7 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-block btn-large" disabled={action.busy}>
             Send reset link
           </button>
+          <p className="auth-hint">No email after a few minutes? Your school's admin can reset your password.</p>
           <button type="button" className="link-button auth-back" onClick={() => switchTo('signin')}>
             Back to sign in
           </button>
