@@ -45,6 +45,9 @@ Run it once only. Running it again fails with "already exists" — that's harmle
    optional details. Safe to run again.
 9. And `supabase/migrations/20261105010000_admin_reset_password.sql`: Reset password on
    `/admin` → People (no email needed). Safe to run again.
+10. And `supabase/migrations/20261105020000_advisor_fixes.sql`: fixes from Supabase's Security
+    and Performance Advisors (indexes, faster access rules, locked-down functions). Same rules,
+    nothing about who can see what changes. Safe to run again.
 
 What it sets up:
 
