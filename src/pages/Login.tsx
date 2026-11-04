@@ -43,6 +43,11 @@ export default function Login() {
   async function handleSignUp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
+    if (!value(form, 'fullName').trim()) {
+      action.setError('Please enter your full name.');
+      (form.elements.namedItem('fullName') as HTMLInputElement).focus();
+      return;
+    }
     setRemember((form.elements.namedItem('remember') as HTMLInputElement).checked);
     let signedIn = false;
     const ok = await action.run(async () => {

@@ -813,6 +813,15 @@ textarea {
   text-align: center;
 }
 
+.loading-screen .form-actions {
+  justify-content: center;
+}
+
+/* Browsers draw <small> at about 11.7px; nothing in the app goes below 12px (DESIGN.md). */
+small {
+  font-size: max(12px, 0.85em);
+}
+
 .error-note,
 .notice {
   margin: 12px 0;
@@ -2618,6 +2627,11 @@ button.more-link:hover {
     display: none;
   }
 
+  /* The list (with the page heading) is hidden, so the open conversation carries it. */
+  .chat.has-thread .thread-title {
+    display: block;
+  }
+
   .chat-head {
     padding: 10px 16px;
   }
@@ -2706,6 +2720,7 @@ button.more-link:hover {
 
 .privacy {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 40px 16px 64px;
   background: var(--bg);
 }
@@ -2749,6 +2764,7 @@ button.more-link:hover {
 
 .admin {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
 }
 
@@ -2803,4 +2819,9 @@ button.more-link:hover {
 
 .nowrap {
   white-space: nowrap;
+}
+
+/* Page heading for an open conversation on phones only (see the phone rules). */
+.thread-title {
+  display: none;
 }

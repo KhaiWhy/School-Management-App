@@ -134,6 +134,7 @@ function Thread({ me, other, onBack }: { me: Profile; other: Profile; onBack: ()
 
   return (
     <>
+      <h1 className="visually-hidden thread-title">Messages with {other.full_name || other.username}</h1>
       <div className="chat-head">
         <button type="button" className="icon-button chat-back" onClick={onBack} aria-label="Back to conversations">
           <Icon name="back" />

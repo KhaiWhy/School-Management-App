@@ -7,7 +7,7 @@ export function initials(name: string) {
 
 export default function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   return (
-    <span className="avatar" style={{ width: size, height: size, fontSize: Math.max(10, size * 0.34) }} aria-hidden="true">
+    <span className="avatar" style={{ width: size, height: size, fontSize: Math.max(12, size * 0.34) }} aria-hidden="true">
       {initials(name)}
     </span>
   );
