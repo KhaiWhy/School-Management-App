@@ -47,6 +47,15 @@ Classrooms column (Khai's own idea). Under 1180px the classrooms column hides; u
 whenever the main column is under 760px; under 760px: classroom chips under the top bar and a
 bottom tab bar (Home, Classes, Work, Messages, More).
 
+## Sign-in pages (/login, /reset-password)
+One row, two columns (5 : 7). Left: a deep sage panel (#3E4E3B; #161C17 in dark mode) with the
+wordmark, one large line of what the app holds, and the same four groups as the side menu
+(Learn, Schedule, Talk, Records) with their icons — the app's real contents, no made-up claims or
+fake dashboards. Right: the form, left-aligned, max 400px: Sign in / Create account tabs at full
+width, then a 30px page title and one muted line, then the fields. Password fields have Show / Hide;
+sign-in has Remember me (unticked by default for shared school computers) beside "Forgot password?".
+Under 860px the panel becomes a short band (wordmark + the one line) above the form.
+
 ## States
 Every list has an empty state in plain words, a loading line and an error note.
 Deletes always ask first. Focus: a 2px solid primary outline, 2px offset, on every control.

@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import * as auth from '../data/auth';
 import { listSchools } from '../data/schools';
-import { useLoad } from '../lib/useLoad';
-import { useAction } from '../lib/useLoad';
+import { useAction, useLoad } from '../lib/useLoad';
 import { ErrorNote } from '../components/ui';
+import AuthShell, { PasswordField } from '../components/AuthShell';
+import { getRemember, setRemember } from '../lib/supabase';
 
 type Mode = 'signin' | 'signup' | 'forgot';
 
@@ -35,12 +36,14 @@ export default function Login() {
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
+    setRemember((form.elements.namedItem('remember') as HTMLInputElement).checked);
     if (await action.run(() => auth.signIn(value(form, 'login'), value(form, 'password')))) goNext();
   }
 
   async function handleSignUp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
+    setRemember((form.elements.namedItem('remember') as HTMLInputElement).checked);
     let signedIn = false;
     const ok = await action.run(async () => {
       ({ signedIn } = await auth.signUp({
@@ -63,13 +66,19 @@ export default function Login() {
     }
   }
 
-  return (
-    <main className="login">
-      <div className="login-card">
-        <h1 className="brand brand-large">Schooling</h1>
+  const titles: Record<Mode, [string, string]> = {
+    signin: ['Sign in', 'Use your username or email.'],
+    signup: ['Create a student account', "Teachers don't sign up here: your school's admin makes your account, then you sign in."],
+    forgot: ['Forgot your password?', "We'll email you a link to set a new password."],
+  };
 
-        {mode !== 'forgot' && (
-          <div className="segmented" role="tablist" aria-label="Sign in or create an account">
+  return (
+    <AuthShell
+      title={titles[mode][0]}
+      lead={titles[mode][1]}
+      top={
+        mode !== 'forgot' && (
+          <div className="segmented auth-tabs" role="tablist" aria-label="Sign in or create an account">
             <button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => switchTo('signin')}>
               Sign in
             </button>
@@ -77,85 +86,83 @@ export default function Login() {
               Create account
             </button>
           </div>
-        )}
+        )
+      }
+    >
 
-        {notice && <p className="notice" role="status">{notice}</p>}
-        <ErrorNote error={action.error} />
+      {notice && <p className="notice" role="status">{notice}</p>}
+      <ErrorNote error={action.error} />
 
-        {mode === 'signin' && (
-          <form className="stack" onSubmit={handleSignIn}>
-            <label className="field">
-              Username or email
-              <input name="login" autoComplete="username" autoCapitalize="none" required />
+      {mode === 'signin' && (
+        <form className="stack" onSubmit={handleSignIn}>
+          <label className="field">
+            Username or email
+            <input name="login" autoComplete="username" autoCapitalize="none" required />
+          </label>
+          <PasswordField label="Password" name="password" autoComplete="current-password" />
+          <div className="auth-row">
+            <label className="check">
+              <input name="remember" type="checkbox" defaultChecked={getRemember()} />
+              Remember me
             </label>
-            <label className="field">
-              Password
-              <input name="password" type="password" autoComplete="current-password" required />
-            </label>
-            <button type="submit" className="btn btn-primary btn-block" disabled={action.busy}>
-              {action.busy ? 'Signing in…' : 'Sign in'}
-            </button>
             <button type="button" className="link-button" onClick={() => switchTo('forgot')}>
-              Forgot your password?
+              Forgot password?
             </button>
-          </form>
-        )}
+          </div>
+          <button type="submit" className="btn btn-primary btn-block btn-large" disabled={action.busy}>
+            {action.busy ? 'Signing in…' : 'Sign in'}
+          </button>
+          <p className="auth-hint">Not on a computer of your own? Leave Remember me unticked and you'll be signed out when the browser closes.</p>
+        </form>
+      )}
 
-        {mode === 'signup' && (
-          <form className="stack" onSubmit={handleSignUp}>
+      {mode === 'signup' && (
+        <form className="stack" onSubmit={handleSignUp}>
+          <label className="field">
+            Full name
+            <input name="fullName" autoComplete="name" maxLength={120} required />
+          </label>
+          <label className="field">
+            Email
+            <input name="email" type="email" autoComplete="email" required />
+          </label>
+          <PasswordField label="Password" name="password" autoComplete="new-password" minLength={8} hint="At least 8 characters." />
+          {schools.length > 0 && (
             <label className="field">
-              Full name
-              <input name="fullName" autoComplete="name" maxLength={120} required />
+              Your school
+              <select name="schoolId" required defaultValue="">
+                <option value="" disabled>Choose your school</option>
+                {schools.map((sc) => (
+                  <option key={sc.id} value={sc.id}>{sc.name}</option>
+                ))}
+              </select>
             </label>
-            <label className="field">
-              Email
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <label className="field">
-              Password
-              <input name="password" type="password" autoComplete="new-password" minLength={8} required />
-              <small className="hint">At least 8 characters.</small>
-            </label>
-            {schools.length > 0 && (
-              <label className="field">
-                Your school
-                <select name="schoolId" required defaultValue="">
-                  <option value="" disabled>Choose your school</option>
-                  {schools.map((sc) => (
-                    <option key={sc.id} value={sc.id}>{sc.name}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <button type="submit" className="btn btn-primary btn-block" disabled={action.busy}>
-              {action.busy ? 'Creating account…' : 'Create account'}
-            </button>
-            <p className="login-note">
-              Your username is made from your email. You can change it later in your profile.
-            </p>
-            <p className="login-note">
-              Teachers don't sign up here: your school's admin makes your account, then you sign in.
-            </p>
-          </form>
-        )}
+          )}
+          <label className="check">
+            <input name="remember" type="checkbox" defaultChecked={getRemember()} />
+            Remember me
+          </label>
+          <button type="submit" className="btn btn-primary btn-block btn-large" disabled={action.busy}>
+            {action.busy ? 'Creating account…' : 'Create account'}
+          </button>
+          <p className="auth-hint">Your username is made from your email. You can change it later in your profile.</p>
+        </form>
+      )}
 
-        {mode === 'forgot' && (
-          <form className="stack" onSubmit={handleForgot}>
-            <p className="login-lead">We'll email you a link to set a new password.</p>
-            <label className="field">
-              Email
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <button type="submit" className="btn btn-primary btn-block" disabled={action.busy}>
-              Send reset link
-            </button>
-            <button type="button" className="link-button" onClick={() => switchTo('signin')}>
-              Back to sign in
-            </button>
-          </form>
-        )}
-        <p className="login-note"><Link to="/privacy">Privacy</Link></p>
-      </div>
-    </main>
+      {mode === 'forgot' && (
+        <form className="stack" onSubmit={handleForgot}>
+          <label className="field">
+            Email
+            <input name="email" type="email" autoComplete="email" required />
+          </label>
+          <button type="submit" className="btn btn-primary btn-block btn-large" disabled={action.busy}>
+            Send reset link
+          </button>
+          <button type="button" className="link-button auth-back" onClick={() => switchTo('signin')}>
+            Back to sign in
+          </button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

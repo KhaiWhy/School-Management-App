@@ -9,7 +9,44 @@ export const publishableKey = import.meta.env.SUPABASE_PUBLISHABLE_KEY as string
 export const isConfigured = Boolean(url && publishableKey);
 
 // Without them the app shows SetupNeeded and never calls this placeholder address.
-export const supabase = createClient(url || 'https://not-configured.invalid', publishableKey || 'not-configured');
+// "Remember me": ticked keeps the sign-in in localStorage (stays after the browser closes);
+// unticked keeps it in sessionStorage (gone when the browser closes, safer on shared school
+// computers). Storage can be blocked (private windows), so every access is guarded.
+const REMEMBER = 'schooling.remember';
+const safe = <T,>(fn: () => T, fallback: T) => {
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+};
+
+export function getRemember(): boolean {
+  return safe(() => localStorage.getItem(REMEMBER) === '1', false);
+}
+
+export function setRemember(on: boolean) {
+  safe(() => localStorage.setItem(REMEMBER, on ? '1' : '0'), undefined);
+}
+
+const authStorage = {
+  getItem: (key: string) => safe(() => localStorage.getItem(key) ?? sessionStorage.getItem(key), null),
+  setItem: (key: string, value: string) =>
+    safe(() => {
+      const [keep, drop] = getRemember() ? [localStorage, sessionStorage] : [sessionStorage, localStorage];
+      keep.setItem(key, value);
+      drop.removeItem(key);
+    }, undefined),
+  removeItem: (key: string) =>
+    safe(() => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    }, undefined),
+};
+
+export const supabase = createClient(url || 'https://not-configured.invalid', publishableKey || 'not-configured', {
+  auth: { storage: authStorage },
+});
 
 // Turns a Supabase result into data, or throws a readable error.
 // The data functions say what they return (src/data/types.ts), so T comes from there.
