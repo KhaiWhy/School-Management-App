@@ -193,6 +193,8 @@ function People({ passkey, onLocked }: { passkey: string; onLocked: () => void }
       ) : people.length === 0 ? (
         <Empty>No one found.</Empty>
       ) : (
+        <>
+        {people.length >= 500 && <p className="hint">Showing the first 500. Search to find someone else.</p>}
         <div className="table-wrap">
           <table className="table">
             <thead>
@@ -249,6 +251,7 @@ function People({ passkey, onLocked }: { passkey: string; onLocked: () => void }
             </tbody>
           </table>
         </div>
+        </>
       )}
     </section>
   );
@@ -258,7 +261,7 @@ function Teachers({ passkey, onLocked }: { passkey: string; onLocked: () => void
   const { data: schools = [] } = useLoad(() => admin.listSchools(passkey), [passkey]);
   const { data: people = [], reload } = useLoad(() => admin.listPeople(passkey, ''), [passkey]);
   const action = useAction();
-  const [made, setMade] = useState<{ email: string; password?: string } | null>(null);
+  const [made, setMade] = useState<{ email: string; password: string; existing: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
   useLockOnBadKey(action.error, onLocked);
   const teachers = people.filter((p) => p.role === 'teacher' || p.role === 'admin');
@@ -274,7 +277,7 @@ function Teachers({ passkey, onLocked }: { passkey: string; onLocked: () => void
     });
     if (ok && result) {
       const r = result as Awaited<ReturnType<typeof admin.createTeacher>>;
-      setMade({ email, password: r.existing ? undefined : r.password });
+      setMade({ email, password: r.password, existing: r.existing });
       setCopied(false);
       form.reset();
       await reload();
@@ -305,8 +308,8 @@ function Teachers({ passkey, onLocked }: { passkey: string; onLocked: () => void
           </label>
           <label className="field">
             School
-            <select name="schoolId" defaultValue="">
-              <option value="">{schools.length ? 'Choose a school' : 'No schools yet'}</option>
+            <select name="schoolId" defaultValue="" required={schools.length > 0}>
+              <option value="" disabled={schools.length > 0}>{schools.length ? 'Choose a school' : 'No schools yet'}</option>
               {schools.map((sc) => (
                 <option key={sc.id} value={sc.id}>{sc.name}</option>
               ))}
@@ -322,29 +325,31 @@ function Teachers({ passkey, onLocked }: { passkey: string; onLocked: () => void
         <p className="hint">
           The account is made straight away with a one-time password. Give the teacher their email and that password;
           they sign in on the normal sign-in page and change it on their Profile. If the email already has an account,
-          it becomes a teacher.
+          it becomes a teacher with this new password (the old one stops working). Teachers need a school to work
+          with students.
         </p>
       </form>
 
       {made && (
         <div className="panel new-code" role="status">
-          {made.password ? (
-            <>
-              <p>Teacher account made for <strong>{made.email}</strong>. One-time password — copy it now, it won't be shown again:</p>
-              <p className="new-code-value">{made.password}</p>
-              <div className="form-actions">
-                <button type="button" className="btn btn-primary" onClick={() => copy(made.password!)}>{copied ? 'Copied' : 'Copy password'}</button>
-                <button type="button" className="btn" onClick={() => setMade(null)}>Done</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p><strong>{made.email}</strong> already had an account. It is now a teacher — they keep their own password.</p>
-              <div className="form-actions">
-                <button type="button" className="btn" onClick={() => setMade(null)}>Done</button>
-              </div>
-            </>
-          )}
+          <p>
+            {made.existing ? (
+              <>
+                <strong>{made.email}</strong> already had an account. It is now a teacher, its old password no longer
+                works, and it has this one-time password — copy it now, it won't be shown again:
+              </>
+            ) : (
+              <>
+                Teacher account made for <strong>{made.email}</strong>. One-time password — copy it now, it won't be
+                shown again:
+              </>
+            )}
+          </p>
+          <p className="new-code-value">{made.password}</p>
+          <div className="form-actions">
+            <button type="button" className="btn btn-primary" onClick={() => copy(made.password)}>{copied ? 'Copied' : 'Copy password'}</button>
+            <button type="button" className="btn" onClick={() => setMade(null)}>Done</button>
+          </div>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
-import { createAssignment, listAssignments, listSubmissions } from '../data/coursework';
+import { createAssignment, listAssignments, listMySubmissions, submissionCounts } from '../data/coursework';
 import type { Assignment, Submission } from '../data/types';
 import { formatDue, localInputToIso } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
@@ -18,16 +18,20 @@ function status(a: Assignment, mine: Submission | undefined) {
 export default function AssignmentList({ classId, canCreate }: { classId?: string; canCreate: boolean }) {
   const user = useUser();
   const isStudent = user.role === 'student';
+  const [limit, setLimit] = useState(100);
   const { data, loading, error, reload } = useLoad(async () => {
-    const [assignments, submissions] = await Promise.all([listAssignments(classId), listSubmissions()]);
-    return { assignments, submissions };
-  }, [classId]);
+    const [assignments, submissions, counts] = await Promise.all([
+      listAssignments(classId, limit),
+      isStudent ? listMySubmissions(user.id) : Promise.resolve([] as Submission[]),
+      isStudent ? Promise.resolve(new Map()) : submissionCounts(),
+    ]);
+    return { assignments, submissions, counts };
+  }, [classId, limit, isStudent, user.id]);
   const [showForm, setShowForm] = useState(false);
 
   const assignments = data?.assignments ?? [];
-  const mine = new Map((data?.submissions ?? []).filter((s) => s.student_id === user.id).map((s) => [s.assignment_id, s]));
-  const handedIn = new Map<string, number>();
-  for (const s of data?.submissions ?? []) handedIn.set(s.assignment_id, (handedIn.get(s.assignment_id) ?? 0) + 1);
+  const mine = new Map((data?.submissions ?? []).map((s) => [s.assignment_id, s]));
+  const counts = data?.counts ?? new Map<string, { handedIn: number; toGrade: number }>();
 
   return (
     <div>
@@ -69,13 +73,20 @@ export default function AssignmentList({ classId, canCreate }: { classId?: strin
                   {isStudent ? (
                     <span className={`badge badge-${s.tone}`}>{s.label}</span>
                   ) : (
-                    <span className="badge">{handedIn.get(a.id) ?? 0} handed in</span>
+                    <span className="badge">{counts.get(a.id)?.handedIn ?? 0} handed in</span>
                   )}
                 </Link>
               </li>
             );
           })}
         </ul>
+      )}
+      {assignments.length >= limit && (
+        <div className="form-actions">
+          <button type="button" className="btn" disabled={loading} onClick={() => setLimit(limit + 100)}>
+            {loading ? 'Loading…' : 'Show older'}
+          </button>
+        </div>
       )}
     </div>
   );

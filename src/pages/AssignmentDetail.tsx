@@ -124,7 +124,7 @@ function MyWork({ assignment }: { assignment: Assignment }) {
         </p>
       )}
 
-      {mine?.grade ? (
+      {mine?.grade || mine?.graded_at ? (
         <p className="hint">This work has been graded, so it can't be changed.</p>
       ) : (
         <form className="stack" onSubmit={handleSubmit}>

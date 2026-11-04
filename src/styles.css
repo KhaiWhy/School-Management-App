@@ -2825,3 +2825,11 @@ button.more-link:hover {
 .thread-title {
   display: none;
 }
+
+/* A value shown, not edited (e.g. your school on Profile). */
+.field-static {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 400;
+}

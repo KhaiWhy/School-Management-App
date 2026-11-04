@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import { ClassPicker, Empty, ErrorNote, Loading, PageHeader } from '../components/ui';
-import { listClassAttendance, listMyAttendance, saveAttendance } from '../data/attendance';
+import { listClassAttendance, listMyAttendance, myAttendanceTotals, saveAttendance } from '../data/attendance';
 import { listMembers } from '../data/classes';
 import type { AttendanceStatus } from '../data/types';
 import { formatDate, isStaff, today } from '../lib/format';
@@ -31,6 +31,12 @@ function TakeRegister() {
     if (!classId) return null;
     const [members, records] = await Promise.all([listMembers(classId), listClassAttendance(classId, date)]);
     return { members, records };
+  }, [classId, date]);
+
+  // A new class or date starts empty, so marks never carry over to the wrong register.
+  useEffect(() => {
+    setMarks({});
+    setSaved(false);
   }, [classId, date]);
 
   useEffect(() => {
@@ -106,7 +112,7 @@ function TakeRegister() {
           </ul>
           {/* Pinned to the bottom of the screen so it's always in reach. */}
           <div className="form-actions register-save">
-            <button type="button" className="btn btn-primary" onClick={save} disabled={action.busy || Object.keys(marks).length === 0}>
+            <button type="button" className="btn btn-primary" onClick={save} disabled={action.busy || loading || Boolean(error) || Object.keys(marks).length === 0}>
               {action.busy ? 'Saving…' : 'Save register'}
             </button>
             {saved ? (
@@ -123,10 +129,15 @@ function TakeRegister() {
 
 function MyAttendance() {
   const user = useUser();
-  const { data: records = [], loading, error } = useLoad(() => listMyAttendance(user.id), [user.id]);
-
-  const totals = STATUSES.map((s) => ({ ...s, count: records.filter((r) => r.status === s.id).length }));
-  const attended = records.filter((r) => r.status === 'present' || r.status === 'late').length;
+  const { data, loading, error } = useLoad(
+    async () => ({ records: await listMyAttendance(user.id), counts: await myAttendanceTotals() }),
+    [user.id],
+  );
+  const records = data?.records ?? [];
+  const counts = data?.counts ?? {};
+  const totals = STATUSES.map((s) => ({ ...s, count: counts[s.id] ?? 0 }));
+  const all = totals.reduce((sum, t) => sum + t.count, 0);
+  const attended = (counts.present ?? 0) + (counts.late ?? 0);
 
   return (
     <section className="page">
@@ -140,7 +151,7 @@ function MyAttendance() {
         <>
           <div className="stat-row">
             <div className="stat">
-              <strong>{Math.round((attended / records.length) * 100)}%</strong>
+              <strong>{all ? Math.round((attended / all) * 100) : 0}%</strong>
               <small>attended</small>
             </div>
             {totals.map((t) => (

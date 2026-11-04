@@ -25,10 +25,8 @@ export default function Profile() {
     const form = event.currentTarget;
     const full_name = (form.elements.namedItem('fullName') as HTMLInputElement).value;
     const username = (form.elements.namedItem('username') as HTMLInputElement).value;
-    const schoolEl = form.elements.namedItem('schoolId') as HTMLSelectElement | null;
-    const school_id = schoolEl ? schoolEl.value || null : user.school_id;
     setNotice(null);
-    if (await details.run(async () => setProfile(await updateMyProfile(user.id, { full_name, username, school_id })))) {
+    if (await details.run(async () => setProfile(await updateMyProfile(user.id, { full_name, username })))) {
       setNotice('Profile saved.');
     }
   }
@@ -90,15 +88,11 @@ export default function Profile() {
           <small className="hint">You sign in with this. 3–30 letters, numbers, dots or underscores.</small>
         </label>
         {schools.length > 0 && (
-          <label className="field">
+          <div className="field">
             School
-            <select name="schoolId" defaultValue={user.school_id ?? ''}>
-              <option value="">Not set</option>
-              {schools.map((sc) => (
-                <option key={sc.id} value={sc.id}>{sc.name}</option>
-              ))}
-            </select>
-          </label>
+            <p className="field-static">{schoolName ?? 'Not set'}</p>
+            <small className="hint">Your school's admin sets this. Ask them if it's wrong.</small>
+          </div>
         )}
         <ErrorNote error={details.error} />
         <button type="submit" className="btn btn-primary" disabled={details.busy}>Save details</button>

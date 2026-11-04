@@ -111,20 +111,22 @@ function onetimePassword() {
 export async function createTeacher(
   passkey: string,
   input: { email: string; name: string; schoolId: string | null },
-): Promise<{ existing: true } | { existing: false; password: string }> {
+): Promise<{ existing: boolean; password: string }> {
   const email = input.email.trim().toLowerCase();
+  const password = onetimePassword();
+  // An email that already has an account becomes a teacher with this new password, so
+  // whoever made that account can't keep using it.
   const status: string = unwrap(
     await supabase.rpc('admin_prepare_teacher', {
       passkey,
       teacher_email: email,
       teacher_name: input.name.trim(),
       school: input.schoolId,
+      new_password: password,
     }),
   );
-  if (status === 'existing') return { existing: true };
+  if (status === 'existing') return { existing: true, password };
   if (status !== 'ok') fail(status);
-
-  const password = onetimePassword();
   const side = createClient(url, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'schooling-admin-create' },
   });

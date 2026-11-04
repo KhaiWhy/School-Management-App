@@ -48,6 +48,11 @@ Run it once only. Running it again fails with "already exists" — that's harmle
 10. And `supabase/migrations/20261105020000_advisor_fixes.sql`: fixes from Supabase's Security
     and Performance Advisors (indexes, faster access rules, locked-down functions). Same rules,
     nothing about who can see what changes. Safe to run again.
+11. And `supabase/migrations/20261105030000_security_review_fixes.sql`: fixes from the security
+    review: attempt limits that can't be skipped, people only see people they share a class,
+    school or activity with, school-wide posts/events/activities kept per school, schools set only
+    on the admin page, 8-character class codes, graded work kept as handed in. Safe to run again.
+    **After this, teachers need a school** (admin page → People) once any school exists.
 
 What it sets up:
 
@@ -132,7 +137,7 @@ npm run dev
 
 ## Testing the rules without Supabase
 `npm run test:db` runs the database file on a local copy of Postgres and checks
-209 rules (who can read and change what, username sign-in, the admin page, password reset, schools, teachers, merits and the same-school rule). Run it after changing the SQL.
+245 rules (who can read and change what, username sign-in and attempt limits, the admin page, password reset, schools, teachers, merits, who can see whom and the same-school rule). Run it after changing the SQL.
 
 ## Changing the database later
 Add a new file in `supabase/migrations/` (e.g. `20261201000000_add_departments.sql`),

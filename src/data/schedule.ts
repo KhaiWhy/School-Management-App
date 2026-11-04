@@ -1,4 +1,5 @@
 import { supabase, unwrap } from '../lib/supabase';
+import { today } from '../lib/format';
 import type { EventCategory, SchoolEvent, TimetableSlot } from './types';
 
 // ---------- Timetable ----------
@@ -37,8 +38,18 @@ export async function deleteSlot(id: string) {
 
 // ---------- School calendar ----------
 
+// Your school's events: the newest 500, shown in date order.
 export async function listEvents(): Promise<SchoolEvent[]> {
-  return unwrap(await supabase.from('events').select('*').order('starts_on').limit(500));
+  const rows: SchoolEvent[] = unwrap(await supabase.from('events').select('*').order('starts_on', { ascending: false }).limit(500));
+  return rows.reverse();
+}
+
+// What's still to come (or still going on), soonest first.
+export async function listUpcomingEvents(limit = 10): Promise<SchoolEvent[]> {
+  const t = today();
+  return unwrap(
+    await supabase.from('events').select('*').or(`starts_on.gte.${t},ends_on.gte.${t}`).order('starts_on').limit(limit),
+  );
 }
 
 export async function addEvent(input: {

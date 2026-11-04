@@ -132,7 +132,7 @@ check('sign-up metadata cannot grant a role', meta.rows[0].role === 'student');
 await denied('student cannot make self teacher', 'S1', `update public.profiles set role = 'teacher' where id = $1`, [ids.S1]);
 await ok('student renames self', 'S1', `update public.profiles set full_name = 'Sam' where id = $1`, [ids.S1]);
 await denied('student cannot rename others', 'S1', `update public.profiles set full_name = 'x' where id = $1`, [ids.S2]);
-await ok('admin promotes', 'A', `update public.profiles set role = 'student' where id = $1`, [ids.S3]);
+await denied('roles change only through the admin page', 'A', `update public.profiles set role = 'student' where id = $1`, [ids.S3]);
 
 // ---------- classes ----------
 await denied('student cannot create class', 'S1', `insert into public.classes (name) values ('Hack')`);
@@ -143,9 +143,9 @@ if (!cls) {
 }
 const classId = cls.rows[0].id;
 const code = cls.rows[0].join_code;
-check('join code is 6 chars', /^[0-9A-F]{6}$/.test(code));
+check('join code is 8 clear characters', /^[A-HJ-NP-Z2-9]{8}$/.test(code));
 await denied('teacher cannot create class for someone else', 'T2', `insert into public.classes (name, teacher_id) values ('x', $1)`, [ids.T]);
-await denied('wrong code fails', 'S1', `select public.join_class('ZZZZZZ')`);
+check('wrong code fails', (await as('S1', `select public.join_class('ZZZZZZZZ') as r`)).rows[0].r === 'not-found');
 await ok('student joins with code', 'S1', `select public.join_class($1)`, [code.toLowerCase()]);
 await ok('second student joins', 'S2', `select public.join_class($1)`, [code]);
 await count('member sees class', 'S1', `select * from public.classes`, [], 1);
@@ -184,9 +184,9 @@ await count('teacher sees submission', 'T', `select * from public.submissions`, 
 await ok('teacher grades', 'T', `update public.submissions set grade = 'B', feedback = 'Good', body = 'teacher edit'`);
 const graded = await db.query(`select body, grade, graded_at from public.submissions`);
 check('teacher grade saved, body kept', graded.rows[0].grade === 'B' && graded.rows[0].body === 'my work' && graded.rows[0].graded_at);
-await ok('student resubmits', 'S1', `update public.submissions set body = 'v2', grade = 'A' where student_id = $1`, [ids.S1]);
+await denied('graded work cannot be changed (REV-10)', 'S1', `update public.submissions set body = 'v2', grade = 'A' where student_id = $1`, [ids.S1]);
 const after = await db.query(`select body, grade from public.submissions`);
-check('student cannot change grade', after.rows[0].grade === 'B' && after.rows[0].body === 'v2');
+check('graded work and grade unchanged', after.rows[0].grade === 'B' && after.rows[0].body === 'my work');
 await denied('graded work cannot be withdrawn', 'S1', `delete from public.submissions where student_id = $1`, [ids.S1]);
 
 // ---------- materials ----------
@@ -291,6 +291,8 @@ check('school: duplicate refused', dup && dup.rows[0].s === 'duplicate');
 check('school: no add without passkey', (await as('ANON', `select public.admin_save_school('nope', null, 'X School') as s`)).rows[0].s === 'wrong');
 const schools = await ok('school: anyone reads names (sign-up list)', 'ANON', `select id, name from public.schools`);
 const schoolId = schools.rows[0].id;
+// Once schools exist, staff need one to work with students (REV-07).
+await db.query(`update public.profiles set school_id = $1 where id = any($2)`, [schoolId, [ids.T, ids.T2]]);
 check('school: one school', schools.rows.length === 1);
 await denied('school: nobody adds directly', 'S1', `insert into public.schools (name) values ('Hack School')`);
 await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a1', 'new.student@school.test', $1)`, [{ full_name: 'New Student', school_id: schoolId, role: 'teacher' }]);
@@ -299,19 +301,19 @@ check('signup: student with school, role ignored', ns.rows[0].role === 'student'
 await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a4', 'bad.school@school.test', $1)`, [{ school_id: 'not-a-uuid' }]);
 const bs = await db.query(`select school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a4'`);
 check('signup: bad school id ignored', bs.rows[0].school_id === null);
-const prep = await ok('teacher: prepare', 'ANON', `select public.admin_prepare_teacher($1, ' Park@School.test ', 'Mr Park', $2) as s`, [PK, schoolId]);
+const prep = await ok('teacher: prepare', 'ANON', `select public.admin_prepare_teacher($1, ' Park@School.test ', 'Mr Park', $2, 'Teacher-pass-1') as s`, [PK, schoolId]);
 check('teacher: prepared', prep && prep.rows[0].s === 'ok');
-check('teacher: bad email refused', (await as('ANON', `select public.admin_prepare_teacher($1, 'nope', '', null) as s`, [PK])).rows[0].s === 'bad-email');
-check('teacher: no prepare without passkey', (await as('ANON', `select public.admin_prepare_teacher('nope', 'a@b.co', '', null) as s`)).rows[0].s === 'wrong');
+check('teacher: bad email refused', (await as('ANON', `select public.admin_prepare_teacher($1, 'nope', '', null, 'Teacher-pass-1') as s`, [PK])).rows[0].s === 'bad-email');
+check('teacher: no prepare without passkey', (await as('ANON', `select public.admin_prepare_teacher('nope', 'a@b.co', '', null, 'Teacher-pass-1') as s`)).rows[0].s === 'wrong');
 await denied('teacher: nobody reads the teacher list', 'ANON', `select * from public.teacher_emails`);
 await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a2', 'park@school.test', '{}')`);
 const park = await db.query(`select role, full_name, school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a2'`);
 check('teacher: account becomes a teacher with name and school', park.rows[0].role === 'teacher' && park.rows[0].full_name === 'Mr Park' && park.rows[0].school_id === schoolId);
-const ex = await ok('teacher: existing account', 'ANON', `select public.admin_prepare_teacher($1, 's30@other.test', 'Kim', $2) as s`, [PK, schoolId]);
+const ex = await ok('teacher: existing account', 'ANON', `select public.admin_prepare_teacher($1, 's30@other.test', 'Kim', $2, 'Teacher-pass-1') as s`, [PK, schoolId]);
 check('teacher: unknown existing email is prepared', ex && ex.rows[0].s === 'ok');
-const ex2 = await ok('teacher: promote existing', 'ANON', `select public.admin_prepare_teacher($1, 'a4@school.test', '', null) as s`, [PK]);
+const ex2 = await ok('teacher: promote existing', 'ANON', `select public.admin_prepare_teacher($1, 'a4@school.test', '', null, 'Teacher-pass-1') as s`, [PK]);
 check('teacher: not-yet account prepared', ex2 && ex2.rows[0].s === 'ok');
-const ex3 = await ok('teacher: existing user', 'ANON', `select public.admin_prepare_teacher($1, 'bad.school@school.test', 'Ms Bad', $2) as s`, [PK, schoolId]);
+const ex3 = await ok('teacher: existing user', 'ANON', `select public.admin_prepare_teacher($1, 'bad.school@school.test', 'Ms Bad', $2, 'Teacher-pass-1') as s`, [PK, schoolId]);
 check('teacher: existing account made teacher now', ex3 && ex3.rows[0].s === 'existing');
 const bsr = await db.query(`select role, school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a4'`);
 check('teacher: existing account role and school set', bsr.rows[0].role === 'teacher' && bsr.rows[0].school_id === schoolId);
@@ -319,7 +321,7 @@ const ppl = await ok('admin: people with school', 'ANON', `select * from public.
 check('admin: search by school name', ppl && ppl.rows.length >= 2 && ppl.rows.every((r) => r.school_name === 'Green Hill School'));
 const ss = await ok('admin: set school', 'ANON', `select public.admin_set_school($1, $2, $3) as s`, [PK, ids.S1, schoolId]);
 check('admin: school set', ss && ss.rows[0].s === 'ok');
-await ok('student changes own school', 'S2', `update public.profiles set school_id = $1 where id = $2`, [schoolId, ids.S2]);
+await denied('student cannot change own school (REV-07)', 'S2', `update public.profiles set school_id = $1 where id = $2`, [schoolId, ids.S2]);
 const sch = await ok('admin: schools list with counts', 'ANON', `select * from public.admin_schools($1)`, [PK]);
 check('admin: school counts', sch && Number(sch.rows[0].students) >= 2 && Number(sch.rows[0].teachers) >= 2);
 check('invite codes are gone', (await db.query(`select count(*)::int n from pg_proc where proname in ('check_teacher_code','admin_create_invite')`)).rows[0].n === 0);
@@ -359,7 +361,7 @@ await ok('merit: give with details', 'T', `insert into public.merits (student_id
 const schoolB = (await db.query(`insert into public.schools (name) values ('Riverside Academy') returning id`)).rows[0].id;
 await db.query(`update public.profiles set school_id = $1 where id = any($2)`, [schoolId, [ids.T, ids.S1, ids.S2]]);
 await db.query(`update public.profiles set school_id = $1 where id = $2`, [schoolB, ids.S3]);
-await denied('same school: student from another school cannot join', 'S3', `select public.join_class($1)`, [code]);
+check('same school: student from another school cannot join', (await as('S3', `select public.join_class($1) as r`, [code])).rows[0].r === 'other-school');
 await denied('same school: teacher cannot add a student from another school', 'T', `insert into public.class_members (class_id, user_id) values ($1, $2)`, [classId, ids.S3]);
 await ok('same school: same-school student gets a merit', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 1, 'Good question')`, [ids.S2, classId]);
 await db.query(`update public.profiles set school_id = $1 where id = $2`, [schoolB, ids.S2]);
@@ -377,6 +379,98 @@ const mem = await ok('admin: class members', 'ANON', `select * from public.admin
 check('admin: members listed', mem && mem.rows.length === 2);
 const rm = await ok('admin: remove member', 'ANON', `select public.admin_remove_member($1, $2, $3) as s`, [PK, classId, ids.S2]);
 check('admin: member removed', rm && rm.rows[0].s === 'ok');
+
+// ---------- Security review fixes (REV-01 … REV-13) ----------
+const readOnly = async (sql, params = []) => {
+  await db.exec(`begin transaction read only; set local role anon;`);
+  try { await db.query(sql, params); return 'ran'; } catch (e) { return e.message; } finally { await db.exec('rollback'); }
+};
+const client = (ip) => db.query(`select set_config('request.headers', $1, false)`, [ip ? JSON.stringify({ 'cf-connecting-ip': ip }) : '']);
+// REV-01: a read-only call can't test a passkey or password, right or wrong.
+const roWrong = await readOnly(`select public.admin_status('nope-nope')`);
+const roRight = await readOnly(`select public.admin_status($1)`, [PK]);
+check('REV-01: read-only passkey check fails the same for right and wrong', roWrong !== 'ran' && roWrong === roRight);
+const s1name = (await db.query(`select username from public.profiles where id = $1`, [ids.S1])).rows[0].username;
+const roPw1 = await readOnly(`select public.email_for_sign_in($1, 'pass-S1')`, [s1name]);
+const roPw2 = await readOnly(`select public.email_for_sign_in($1, 'wrong-one')`, [s1name]);
+check('REV-01: read-only sign-in fails the same for right and wrong', roPw1 !== 'ran' && roPw1 === roPw2);
+// REV-01: lock-out is per client, so one client can't lock the admin page for everyone.
+await client('10.0.0.1');
+for (let i = 0; i < 11; i++) await as('ANON', `select public.admin_status('wrong-a-${i}')`);
+check('REV-01: 11th try from one client is locked', (await as('ANON', `select public.admin_status($1) as s`, [PK])).rows[0].s === 'locked');
+await client('10.0.0.2');
+check('REV-01: another client still gets in', (await as('ANON', `select public.admin_status($1) as s`, [PK])).rows[0].s === 'ok');
+await client(null);
+await db.query(`delete from public.admin_attempts where client like '10.0.0.%'`);
+
+// REV-02: strangers see only themselves; messages only to people you know.
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000b1', 'stranger@x.test', '{"full_name":"Stranger"}')`);
+ids.X = '00000000-0000-0000-0000-0000000000b1';
+await count('REV-02: a new stranger sees only their own profile', 'X', `select * from public.profiles`, [], 1);
+await denied('REV-02: a stranger cannot message a student', 'X', `insert into public.messages (recipient_id, body) values ($1, 'hi')`, [ids.S1]);
+const s1sees = (await as('S1', `select id from public.profiles`)).rows.map((r) => r.id);
+check('REV-02: a student sees their teacher and classmate, not strangers', s1sees.includes(ids.T) && s1sees.includes(ids.S2) && !s1sees.includes(ids.X));
+await ok('REV-02: a student can message their teacher', 'S1', `insert into public.messages (recipient_id, body) values ($1, 'Question about homework')`, [ids.T]);
+await ok('REV-02: and the teacher can reply', 'T', `insert into public.messages (recipient_id, body) values ($1, 'Ask me in class')`, [ids.S1]);
+
+// REV-03: an existing account that becomes a teacher gets the new password; old pending emails expire.
+const badName = (await db.query(`select username from public.profiles where id = '00000000-0000-0000-0000-0000000000a4'`)).rows[0].username;
+check('REV-03: existing account now uses the one-time password', (await as('ANON', `select public.email_for_sign_in($1, 'Teacher-pass-1') as e`, [badName])).rows[0].e === 'bad.school@school.test');
+await db.query(`insert into public.teacher_emails (email, full_name, created_at) values ('old.invite@school.test', 'Old', now() - interval '2 hours')`);
+await db.query(`insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000b2', 'old.invite@school.test')`);
+check('REV-03: an expired teacher email signs up as a student', (await db.query(`select role from public.profiles where id = '00000000-0000-0000-0000-0000000000b2'`)).rows[0].role === 'student');
+
+// REV-04, REV-07, REV-08: schools kept apart, owners stay owners.
+const schoolC = (await db.query(`insert into public.schools (name) values ('Hillside College') returning id`)).rows[0].id;
+await db.query(`update public.profiles set school_id = $1 where id = any($2)`, [schoolId, [ids.T, ids.T2, ids.S1, ids.S2]]);
+await db.query(`update public.profiles set school_id = $1 where id = $2`, [schoolC, ids.S3]);
+await ok('REV-04: teacher posts to their school', 'T', `insert into public.announcements (title, body) values ('School closed tomorrow', 'Snow')`);
+const sawS1 = (await as('S1', `select title from public.announcements where title = 'School closed tomorrow'`)).rows.length;
+const sawS3 = (await as('S3', `select title from public.announcements where title = 'School closed tomorrow'`)).rows.length;
+check('REV-04: the post reaches its school only', sawS1 === 1 && sawS3 === 0);
+await denied('REV-04: the school cannot be set by hand', 'T', `update public.announcements set school_id = $1 where title = 'School closed tomorrow'`, [schoolC]);
+await ok('REV-04: teacher adds a school event', 'T', `insert into public.events (title, starts_on) values ('Sports day', '2026-12-05')`);
+await count('REV-04: another school does not see it', 'S3', `select * from public.events where title = 'Sports day'`, [], 0);
+await denied('REV-04: another teacher cannot change it', 'T2', `update public.events set title = 'Cancelled' where title = 'Sports day'`);
+await denied('REV-04: another teacher cannot delete it', 'T2', `delete from public.events where title = 'Sports day'`);
+await ok('REV-04: its creator can', 'T', `update public.events set title = 'Sports day (moved)' where title = 'Sports day'`);
+const act2 = (await as('T', `insert into public.activities (name) values ('Chess club') returning id`)).rows[0].id;
+await ok('REV-04: student joins a school activity', 'S1', `insert into public.activity_members (activity_id, user_id) values ($1, $2)`, [act2, ids.S1]);
+await count('REV-04: another school does not see the activity', 'S3', `select * from public.activities where id = $1`, [act2], 0);
+await denied('REV-04: and cannot join it', 'S3', `insert into public.activity_members (activity_id, user_id) values ($1, $2)`, [act2, ids.S3]);
+await count('REV-04: a non-member student cannot read the roster', 'S2', `select * from public.activity_members where activity_id = $1`, [act2], 0);
+await count('REV-04: the member can', 'S1', `select * from public.activity_members where activity_id = $1`, [act2], 1);
+await denied('REV-07: a student cannot change their own school', 'S1', `update public.profiles set school_id = $1 where id = $2`, [schoolC, ids.S1]);
+await ok('REV-07: but can still change their name', 'S1', `update public.profiles set full_name = 'S1 Renamed' where id = $1`, [ids.S1]);
+await db.query(`update public.profiles set school_id = null where id = $1`, [ids.T2]);
+check('REV-07: a teacher with no school fails the same-school rule', (await as('T2', `select public.same_school($1, $2) as r`, [ids.T2, ids.S1])).rows[0].r === false);
+await db.query(`update public.profiles set school_id = $1 where id = $2`, [schoolId, ids.T2]);
+await denied('REV-08: a teacher cannot hand their class to a student', 'T', `update public.classes set teacher_id = $1 where id = $2`, [ids.S1, classId]);
+await ok('REV-08: but can rename it', 'T', `update public.classes set name = 'Maths 10A' where id = $1`, [classId]);
+await denied('REV-08: an author cannot change who wrote a post', 'T', `update public.announcements set author_id = $1 where title = 'School closed tomorrow'`, [ids.T2]);
+await denied('REV-08: or backdate it', 'T', `update public.announcements set created_at = now() - interval '1 year' where title = 'School closed tomorrow'`);
+
+// REV-09: wrong codes are limited.
+let last = '';
+for (let i = 0; i < 21; i++) last = (await as('S2', `select public.join_class('WRONGWR${String.fromCharCode(65 + i)}') as r`)).rows[0].r;
+check('REV-09: the 21st wrong code is refused as too many', last === 'too-many');
+await db.query(`delete from public.join_attempts`);
+
+// REV-10: a graded file can't be deleted by the student.
+const gradedFile = `${classId}/submissions/${ids.S1}/graded.pdf`;
+await as('S1', `insert into storage.objects (bucket_id, name) values ('class-files', $1)`, [gradedFile]);
+await db.query(`update public.submissions set file_path = $1 where student_id = $2`, [gradedFile, ids.S1]);
+await denied('REV-10: student cannot delete the file of graded work', 'S1', `delete from storage.objects where name = $1`, [gradedFile]);
+
+// REV-13: totals worked out in the database.
+const sc = (await as('T', `select * from public.submission_counts()`)).rows;
+check('REV-13: submission counts per assignment', sc.length >= 1 && Number(sc[0].handed_in) >= 1);
+await ok('REV-13: own attendance totals', 'S1', `select * from public.my_attendance_totals()`);
+
+await db.query(`update public.profiles set school_id = null where id = any($1)`, [[ids.T, ids.T2, ids.S1, ids.S2, ids.S3]]);
+await db.query(`delete from public.schools where id = $1`, [schoolC]);
+
+check('REV-14: a used teacher email is not kept', Number((await db.query(`select count(*) n from public.teacher_emails where email = 'park@school.test'`)).rows[0].n) === 0);
 
 // Admin password reset (no email needed).
 const s2name = (await db.query(`select username from public.profiles where id = $1`, [ids.S2])).rows[0].username;

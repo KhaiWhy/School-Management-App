@@ -61,11 +61,11 @@ export default function Classes() {
               Class code from your teacher
               <input
                 name="code"
-                placeholder="e.g. 7F3A9C"
+                placeholder="e.g. K7QW2M9P"
                 autoCapitalize="characters"
                 autoComplete="off"
-                pattern="[A-Za-z0-9]{6}"
-                title="6 letters or numbers"
+                pattern="[A-Za-z0-9]{6,8}"
+                title="The 8 letters and numbers your teacher gave you"
                 required
               />
             </label>

@@ -5,8 +5,11 @@ const FIELDS =
   '*, class:classes(name), giver:profiles!merits_given_by_fkey(full_name), student:profiles!merits_student_id_fkey(full_name, username)';
 
 // Students get their own; teachers get the ones for their classes and the ones they gave.
-export async function listMerits(): Promise<Merit[]> {
-  return unwrap(await supabase.from('merits').select(FIELDS).order('created_at', { ascending: false }).limit(300));
+// classId given: that class only (a teacher's view); otherwise all of yours.
+export async function listMerits(classId?: string): Promise<Merit[]> {
+  let query = supabase.from('merits').select(FIELDS).order('created_at', { ascending: false }).limit(2000);
+  if (classId) query = query.eq('class_id', classId);
+  return unwrap(await query);
 }
 
 export async function giveMerit(input: { studentId: string; classId: string; points: number; reason: string; details?: string }) {

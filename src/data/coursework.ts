@@ -6,14 +6,33 @@ import type { Assignment, Material, Submission } from './types';
 
 const ASSIGNMENT_FIELDS = '*, class:classes(name, teacher_id)';
 
-export async function listAssignments(classId?: string): Promise<Assignment[]> {
+// Newest due date first (no due date at the top); `limit` grows with "Show older".
+export async function listAssignments(classId?: string, limit = 100): Promise<Assignment[]> {
   let query = supabase
     .from('assignments')
     .select(ASSIGNMENT_FIELDS)
-    .order('due_at', { ascending: true, nullsFirst: false })
-    .limit(300);
+    .order('due_at', { ascending: false, nullsFirst: true })
+    .order('created_at', { ascending: false })
+    .limit(limit);
   if (classId) query = query.eq('class_id', classId);
   return unwrap(await query);
+}
+
+// What's due from now on, soonest first.
+export async function listUpcomingAssignments(limit = 20): Promise<Assignment[]> {
+  return unwrap(
+    await supabase
+      .from('assignments')
+      .select(ASSIGNMENT_FIELDS)
+      .gte('due_at', new Date().toISOString())
+      .order('due_at', { ascending: true })
+      .limit(limit),
+  );
+}
+
+export async function listAssignmentsByIds(ids: string[]): Promise<Assignment[]> {
+  if (ids.length === 0) return [];
+  return unwrap(await supabase.from('assignments').select(ASSIGNMENT_FIELDS).in('id', ids.slice(0, 100)));
 }
 
 export async function getAssignment(id: string): Promise<Assignment | null> {
@@ -42,13 +61,28 @@ export async function deleteAssignment(id: string) {
 
 // ---------- Submissions ----------
 
-// Students only ever get their own rows back; teachers get the whole class.
-export async function listSubmissions(assignmentId?: string): Promise<Submission[]> {
-  let query = supabase
-    .from('submissions')
-    .select('*, student:profiles!submissions_student_id_fkey(full_name, username)');
-  if (assignmentId) query = query.eq('assignment_id', assignmentId);
-  return unwrap(await query);
+// Everything handed in for one assignment (a teacher sees the class; a student their own).
+export async function listSubmissions(assignmentId: string): Promise<Submission[]> {
+  return unwrap(
+    await supabase
+      .from('submissions')
+      .select('*, student:profiles!submissions_student_id_fkey(full_name, username)')
+      .eq('assignment_id', assignmentId)
+      .order('submitted_at', { ascending: false }),
+  );
+}
+
+// A student's own work, for their lists.
+export async function listMySubmissions(studentId: string): Promise<Submission[]> {
+  return unwrap(
+    await supabase.from('submissions').select('*').eq('student_id', studentId).order('submitted_at', { ascending: false }).limit(1000),
+  );
+}
+
+// Per assignment: how many handed in, how many still to grade (counted in the database).
+export async function submissionCounts(): Promise<Map<string, { handedIn: number; toGrade: number }>> {
+  const rows: { assignment_id: string; handed_in: number; to_grade: number }[] = unwrap(await supabase.rpc('submission_counts'));
+  return new Map(rows.map((r) => [r.assignment_id, { handedIn: Number(r.handed_in), toGrade: Number(r.to_grade) }]));
 }
 
 export async function submitWork(input: {
@@ -65,10 +99,10 @@ export async function submitWork(input: {
       `${input.assignment.class_id}/submissions/${input.studentId}`,
       input.file,
     );
-    if (file_path) await removeClassFile(file_path);
     file_path = uploaded.path;
     file_name = uploaded.name;
   }
+  const oldFile = input.previous?.file_path ?? null;
   unwrap(
     await supabase.from('submissions').upsert(
       {
@@ -81,6 +115,7 @@ export async function submitWork(input: {
       { onConflict: 'assignment_id,student_id' },
     ),
   );
+  if (oldFile && oldFile !== file_path) await removeClassFile(oldFile);
 }
 
 export async function withdrawSubmission(submission: Submission) {

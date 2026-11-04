@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import { useUser } from '../auth/AuthContext';
 import Announcements from '../components/Announcements';
 import { ErrorNote, Loading } from '../components/ui';
-import { listAssignments, listSubmissions } from '../data/coursework';
-import { listEvents, listSlots } from '../data/schedule';
+import { listAssignmentsByIds, listMySubmissions, listUpcomingAssignments, submissionCounts } from '../data/coursework';
+import { listSlots, listUpcomingEvents } from '../data/schedule';
 import type { TimetableSlot } from '../data/types';
 import { WEEKDAYS, formatDate, formatDue, formatTime, isStaff, today } from '../lib/format';
 import { useLoad } from '../lib/useLoad';
@@ -56,27 +56,26 @@ export default function Home() {
   const user = useUser();
   const staff = isStaff(user.role);
   const { data, loading, error } = useLoad(async () => {
-    const [assignments, submissions, events, slots] = await Promise.all([
-      listAssignments(),
-      listSubmissions(),
-      listEvents(),
+    const [upcoming, mine, counts, events, slots] = await Promise.all([
+      listUpcomingAssignments(30),
+      staff ? Promise.resolve([]) : listMySubmissions(user.id),
+      staff ? submissionCounts() : Promise.resolve(new Map<string, { handedIn: number; toGrade: number }>()),
+      listUpcomingEvents(4),
       listSlots(),
     ]);
-    const done = new Set(staff ? [] : submissions.map((s) => s.assignment_id));
-    const now = Date.now();
+    const done = new Set(mine.map((s) => s.assignment_id));
+    // Teachers: the assignments with the most work handed in but not graded yet.
+    const waiting = [...counts.entries()].filter(([, c]) => c.toGrade > 0).sort((x, y) => y[1].toGrade - x[1].toGrade).slice(0, 5);
+    const toGradeRows = await listAssignmentsByIds(waiting.map(([id]) => id));
     return {
       slots,
-      dueSoon: assignments
-        .filter((a) => a.due_at && new Date(a.due_at).getTime() > now && !done.has(a.id))
-        .slice(0, 4),
-      events: events.filter((e) => (e.ends_on ?? e.starts_on) >= today()).slice(0, 4),
-      // Teachers: work handed in but not graded yet, per assignment.
-      toGrade: assignments
-        .map((a) => ({ a, n: submissions.filter((s) => s.assignment_id === a.id && !s.grade).length }))
-        .filter((x) => x.n > 0)
-        .slice(0, 5),
+      dueSoon: upcoming.filter((a) => !done.has(a.id)).slice(0, 4),
+      events,
+      toGrade: waiting
+        .map(([id, c]) => ({ a: toGradeRows.find((a) => a.id === id), n: c.toGrade }))
+        .filter((x): x is { a: NonNullable<typeof x.a>; n: number } => Boolean(x.a)),
     };
-  }, [staff]);
+  }, [staff, user.id]);
 
   const name = user.full_name || user.username;
   const strip = data ? pickDay(data.slots) : null;

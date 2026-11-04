@@ -26,7 +26,9 @@ export default function Activities() {
       <li key={a.id} className="panel activity">
         <div className="submission-head">
           <h3>{a.name}</h3>
-          <span className="badge">{a.members.length} {a.members.length === 1 ? 'member' : 'members'}</span>
+          {(joined || leads || staff) && (
+            <span className="badge">{a.members.length} {a.members.length === 1 ? 'member' : 'members'}</span>
+          )}
         </div>
         {a.meets && <p className="activity-meets">{a.meets}</p>}
         {a.description && <p className="announcement-text">{a.description}</p>}

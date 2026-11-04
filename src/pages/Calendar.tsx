@@ -74,7 +74,7 @@ export default function Calendar() {
                     {e.description && <span className="item-text">{e.description}</span>}
                   </span>
                   <span className={`badge badge-${e.category}`}>{CATEGORIES.find((c) => c.id === e.category)?.label}</span>
-                  {staff && (
+                  {(e.created_by === user.id || user.role === 'admin') && (
                     <button
                       type="button"
                       className="btn btn-small"

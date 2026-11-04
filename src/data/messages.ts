@@ -8,15 +8,17 @@ export async function listRecentMessages(): Promise<Message[]> {
   );
 }
 
+// The newest 500 messages of a conversation, oldest first on screen.
 export async function listThread(me: string, other: string): Promise<Message[]> {
-  return unwrap(
+  const rows: Message[] = unwrap(
     await supabase
       .from('messages')
       .select('*')
       .or(`and(sender_id.eq.${me},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${me})`)
-      .order('created_at')
+      .order('created_at', { ascending: false })
       .limit(500),
   );
+  return rows.reverse();
 }
 
 export async function sendMessage(recipientId: string, body: string): Promise<Message> {

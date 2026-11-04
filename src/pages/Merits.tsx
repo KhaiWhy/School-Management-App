@@ -78,7 +78,7 @@ function MeritRow({ m, showStudent, actions }: { m: Merit; showStudent?: boolean
 }
 
 function MyMerits() {
-  const { data: merits = [], loading, error } = useLoad(listMerits, []);
+  const { data: merits = [], loading, error } = useLoad(() => listMerits(), []);
   const total = merits.reduce((sum, m) => sum + m.points, 0);
   const given = merits.filter((m) => m.points > 0).reduce((s, m) => s + m.points, 0);
   const taken = merits.filter((m) => m.points < 0).reduce((s, m) => s - m.points, 0);
@@ -120,7 +120,7 @@ function GiveMerits() {
   const action = useAction();
   const { data, loading, error, reload } = useLoad(async () => {
     if (!classId) return null;
-    const [members, merits] = await Promise.all([listMembers(classId), listMerits()]);
+    const [members, merits] = await Promise.all([listMembers(classId), listMerits(classId)]);
     return { members, merits: merits.filter((m) => m.class_id === classId) };
   }, [classId]);
 

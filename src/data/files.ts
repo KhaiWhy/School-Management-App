@@ -25,6 +25,25 @@ export async function removeClassFile(path: string) {
   await supabase.storage.from(BUCKET).remove([path]);
 }
 
+// Every file under a folder, at any depth (storage lists one level at a time).
+export async function removeFolder(folder: string) {
+  const files: string[] = [];
+  const walk = async (prefix: string) => {
+    for (let offset = 0; ; offset += 1000) {
+      const { data } = await supabase.storage.from(BUCKET).list(prefix, { limit: 1000, offset });
+      if (!data || data.length === 0) return;
+      for (const item of data) {
+        const path = `${prefix}/${item.name}`;
+        if (item.id) files.push(path);
+        else await walk(path);
+      }
+      if (data.length < 1000) return;
+    }
+  };
+  await walk(folder);
+  for (let i = 0; i < files.length; i += 100) await supabase.storage.from(BUCKET).remove(files.slice(i, i + 100));
+}
+
 // Files are private, so each open makes a link that works for one minute.
 export async function openClassFile(path: string) {
   const { signedUrl } = unwrap(await supabase.storage.from(BUCKET).createSignedUrl(path, 60));

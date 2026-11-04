@@ -52,7 +52,7 @@ function WriteReports() {
         <ul className="submission-list">
           {data.members.map((m) => (
             <ReportRow
-              key={`${m.profile.id}-${term}`}
+              key={`${classId}-${m.profile.id}-${term}`}
               member={m}
               classId={classId}
               term={term}

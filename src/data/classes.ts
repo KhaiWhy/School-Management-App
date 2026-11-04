@@ -1,4 +1,5 @@
 import { supabase, unwrap } from '../lib/supabase';
+import { removeFolder } from './files';
 import type { ClassMember, ClassRoom } from './types';
 
 // "!classes_teacher_id_fkey" picks the teacher link (classes also reach profiles via class_members).
@@ -32,12 +33,22 @@ export async function updateClass(id: string, changes: { name: string; subject: 
   );
 }
 
+// Removes the class's files (materials and handed-in work) first, then the class itself.
 export async function deleteClass(id: string) {
+  await removeFolder(id);
   unwrap(await supabase.from('classes').delete().eq('id', id));
 }
 
+const JOIN_ERRORS: Record<string, string> = {
+  'not-found': 'No class has that code. Check it with your teacher.',
+  'other-school': 'That class is at another school. Check the code, or ask your school\'s admin to check your school.',
+  'too-many': 'Too many wrong codes. Wait 15 minutes and try again.',
+};
+
 export async function joinClass(code: string): Promise<string> {
-  return unwrap(await supabase.rpc('join_class', { code }));
+  const result: string = unwrap(await supabase.rpc('join_class', { code: code.trim() }));
+  if (JOIN_ERRORS[result]) throw new Error(JOIN_ERRORS[result]);
+  return result;
 }
 
 export async function listMembers(classId: string): Promise<ClassMember[]> {

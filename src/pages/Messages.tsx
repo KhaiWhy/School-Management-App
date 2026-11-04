@@ -5,7 +5,7 @@ import Avatar from '../components/Avatar';
 import Icon from '../components/Icon';
 import { Empty, ErrorNote, Loading } from '../components/ui';
 import { listRecentMessages, listThread, sendMessage, subscribeToMessages } from '../data/messages';
-import { listPeople } from '../data/people';
+import { getPeople, searchPeople } from '../data/people';
 import type { Message, Profile } from '../data/types';
 import { formatDateTime } from '../lib/format';
 import { useAction, useLoad } from '../lib/useLoad';
@@ -15,8 +15,19 @@ export default function Messages() {
   const user = useUser();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const { data: people = [] } = useLoad(() => listPeople(), []);
   const { data: recent = [], setData: setRecent } = useLoad(listRecentMessages, []);
+  const term = search.trim().toLowerCase();
+  const { data: matches = [] } = useLoad(() => searchPeople(term), [term]);
+  // Names for everyone in your conversations, plus the person whose thread is open.
+  const partnerIds = useMemo(() => {
+    const ids = recent.map((m) => (m.sender_id === user.id ? m.recipient_id : m.sender_id));
+    if (userId) ids.push(userId);
+    return [...new Set(ids)].sort().join(',');
+  }, [recent, user.id, userId]);
+  const { data: people = [], loading: peopleLoading } = useLoad(
+    () => getPeople(partnerIds ? partnerIds.split(',') : []),
+    [partnerIds],
+  );
 
   // Keep the conversation list fresh when anything new arrives.
   useEffect(
@@ -24,7 +35,7 @@ export default function Messages() {
     [setRecent],
   );
 
-  const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+  const byId = useMemo(() => new Map([...people, ...matches].map((p) => [p.id, p])), [people, matches]);
 
   // People you've talked to, most recent first.
   const conversations = useMemo(() => {
@@ -36,12 +47,7 @@ export default function Messages() {
     return [...seen.entries()];
   }, [recent, user.id]);
 
-  const term = search.trim().toLowerCase();
-  const matches = term
-    ? people.filter(
-        (p) => p.id !== user.id && (p.full_name.toLowerCase().includes(term) || p.username.includes(term)),
-      )
-    : [];
+  const found = matches.filter((p) => p.id !== user.id);
 
   const other = userId ? byId.get(userId) : undefined;
 
@@ -61,7 +67,7 @@ export default function Messages() {
           />
         </div>
         <ul className="chat-people">
-          {(term ? matches.map((p) => [p.id, undefined] as const) : conversations).map(([id, last]) => {
+          {(term ? found.map((p) => [p.id, undefined] as const) : conversations).map(([id, last]) => {
             const person = byId.get(id);
             return (
               <li key={id}>
@@ -81,17 +87,17 @@ export default function Messages() {
           })}
         </ul>
         {!term && conversations.length === 0 && <Empty>No messages yet. Search for someone to start.</Empty>}
-        {term && matches.length === 0 && <Empty>No one matches "{search}".</Empty>}
+        {term && found.length === 0 && <Empty>No one matches "{search}" among your classes and school.</Empty>}
       </div>
 
       <div className="chat-thread">
         {userId ? (
           other ? (
             <Thread me={user} other={other} onBack={() => navigate('/messages')} />
-          ) : people.length ? (
-            <Empty>That person wasn't found.</Empty>
-          ) : (
+          ) : peopleLoading ? (
             <Loading />
+          ) : (
+            <Empty>That person wasn't found, or you don't share a class or school with them.</Empty>
           )
         ) : (
           <Empty>Pick a conversation.</Empty>

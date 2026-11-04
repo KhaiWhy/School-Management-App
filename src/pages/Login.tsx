@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import * as auth from '../data/auth';
 import { listSchools } from '../data/schools';
@@ -16,16 +16,16 @@ function value(form: HTMLFormElement, name: string) {
 
 export default function Login() {
   const { session, profile } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState<Mode>('signin');
   const [notice, setNotice] = useState<string | null>(null);
   const action = useAction();
   const { data: schools = [] } = useLoad(listSchools, []);
 
-  if (session && profile) return <Navigate to="/" replace />;
+  // Signed in (also right after signing in): go where you were heading.
 
-  const goNext = () => navigate(location.state?.from?.pathname ?? '/', { replace: true });
+  const next = (location.state?.from?.pathname as string | undefined) ?? '/';
+  if (session && profile) return <Navigate to={next} replace />;
 
   function switchTo(next: Mode) {
     setMode(next);
@@ -37,7 +37,7 @@ export default function Login() {
     event.preventDefault();
     const form = event.currentTarget;
     setRemember((form.elements.namedItem('remember') as HTMLInputElement).checked);
-    if (await action.run(() => auth.signIn(value(form, 'login'), value(form, 'password')))) goNext();
+    await action.run(() => auth.signIn(value(form, 'login'), value(form, 'password')));
   }
 
   async function handleSignUp(event: FormEvent<HTMLFormElement>) {
@@ -59,8 +59,7 @@ export default function Login() {
       }));
     });
     if (!ok) return;
-    if (signedIn) goNext();
-    else setNotice('Account created. Check your email for the confirmation link, then sign in.');
+    if (!signedIn) setNotice('Account created. Check your email for the confirmation link, then sign in.');
   }
 
   async function handleForgot(event: FormEvent<HTMLFormElement>) {
@@ -117,7 +116,7 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-block btn-large" disabled={action.busy}>
             {action.busy ? 'Signing in…' : 'Sign in'}
           </button>
-          <p className="auth-hint">Not on a computer of your own? Leave Remember me unticked and you'll be signed out when the browser closes.</p>
+          <p className="auth-hint">On a shared computer, leave Remember me unticked: you stay signed in only in this tab, until you close it.</p>
         </form>
       )}
 

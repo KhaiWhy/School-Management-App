@@ -29,6 +29,12 @@ export async function listMyAttendance(studentId: string): Promise<AttendanceRec
       .select('*, class:classes(name)')
       .eq('student_id', studentId)
       .order('on_date', { ascending: false })
-      .limit(500),
+      .limit(100),
   );
+}
+
+// Totals over all of a student's record (counted in the database, not just the recent rows).
+export async function myAttendanceTotals(): Promise<Record<string, number>> {
+  const rows: { status: string; n: number }[] = unwrap(await supabase.rpc('my_attendance_totals'));
+  return Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
 }
