@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import * as auth from '../data/auth';
+import { listSchools } from '../data/schools';
+import { useLoad } from '../lib/useLoad';
 import { useAction } from '../lib/useLoad';
 import { ErrorNote } from '../components/ui';
 
@@ -18,6 +20,7 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>('signin');
   const [notice, setNotice] = useState<string | null>(null);
   const action = useAction();
+  const { data: schools = [] } = useLoad(listSchools, []);
 
   if (session && profile) return <Navigate to="/" replace />;
 
@@ -44,6 +47,7 @@ export default function Login() {
         fullName: value(form, 'fullName').trim(),
         email: value(form, 'email').trim(),
         password: value(form, 'password'),
+        schoolId: value(form, 'schoolId'),
       }));
     });
     if (!ok) return;
@@ -112,11 +116,25 @@ export default function Login() {
               <input name="password" type="password" autoComplete="new-password" minLength={8} required />
               <small className="hint">At least 8 characters.</small>
             </label>
+            {schools.length > 0 && (
+              <label className="field">
+                Your school
+                <select name="schoolId" required defaultValue="">
+                  <option value="" disabled>Choose your school</option>
+                  {schools.map((sc) => (
+                    <option key={sc.id} value={sc.id}>{sc.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <button type="submit" className="btn btn-primary btn-block" disabled={action.busy}>
               {action.busy ? 'Creating account…' : 'Create account'}
             </button>
             <p className="login-note">
               Your username is made from your email. You can change it later in your profile.
+            </p>
+            <p className="login-note">
+              Teachers don't sign up here: your school's admin makes your account, then you sign in.
             </p>
           </form>
         )}

@@ -7,7 +7,8 @@ import { useTheme } from '../lib/theme';
 import { ThemePicker } from './More';
 import { updatePassword } from '../data/auth';
 import { updateMyProfile } from '../data/people';
-import { useAction } from '../lib/useLoad';
+import { listSchools } from '../data/schools';
+import { useAction, useLoad } from '../lib/useLoad';
 
 export default function Profile() {
   const user = useUser();
@@ -16,14 +17,18 @@ export default function Profile() {
   const password = useAction();
   const [notice, setNotice] = useState<string | null>(null);
   const { choice, setChoice } = useTheme();
+  const { data: schools = [] } = useLoad(listSchools, []);
+  const schoolName = schools.find((sc) => sc.id === user.school_id)?.name;
 
   async function handleDetails(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const full_name = (form.elements.namedItem('fullName') as HTMLInputElement).value;
     const username = (form.elements.namedItem('username') as HTMLInputElement).value;
+    const schoolEl = form.elements.namedItem('schoolId') as HTMLSelectElement | null;
+    const school_id = schoolEl ? schoolEl.value || null : user.school_id;
     setNotice(null);
-    if (await details.run(async () => setProfile(await updateMyProfile(user.id, { full_name, username })))) {
+    if (await details.run(async () => setProfile(await updateMyProfile(user.id, { full_name, username, school_id })))) {
       setNotice('Profile saved.');
     }
   }
@@ -51,6 +56,8 @@ export default function Profile() {
           <dd>@{user.username}</dd>
           <dt>Email</dt>
           <dd>{session?.user.email}</dd>
+          <dt>School</dt>
+          <dd>{schoolName ?? '—'}</dd>
           <dt>Role</dt>
           <dd className="capitalise">{user.role}</dd>
         </dl>
@@ -82,6 +89,17 @@ export default function Profile() {
           />
           <small className="hint">You sign in with this. 3–30 letters, numbers, dots or underscores.</small>
         </label>
+        {schools.length > 0 && (
+          <label className="field">
+            School
+            <select name="schoolId" defaultValue={user.school_id ?? ''}>
+              <option value="">Not set</option>
+              {schools.map((sc) => (
+                <option key={sc.id} value={sc.id}>{sc.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <ErrorNote error={details.error} />
         <button type="submit" className="btn btn-primary" disabled={details.busy}>Save details</button>
       </form>

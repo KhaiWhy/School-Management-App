@@ -12,10 +12,10 @@ export default function Privacy() {
 
         <h2 className="section-title">What we store</h2>
         <ul className="privacy-list">
-          <li><strong>Your account:</strong> full name, email, password (stored scrambled; nobody can read it), username and role (student, teacher or admin).</li>
+          <li><strong>Your account:</strong> full name, email, password (stored scrambled; nobody can read it), username, role (student or teacher) and the school you chose.</li>
           <li><strong>Your classes:</strong> which classes you teach or have joined.</li>
           <li><strong>School work:</strong> announcements, assignments, the answers and files you hand in, grades and feedback, class materials.</li>
-          <li><strong>Records:</strong> attendance marks and term reports.</li>
+          <li><strong>Records:</strong> attendance marks, term reports, and merits or demerits with their reason.</li>
           <li><strong>Other:</strong> your messages, the activities you join, timetable lessons and calendar events.</li>
         </ul>
 
@@ -23,9 +23,12 @@ export default function Privacy() {
         <ul className="privacy-list">
           <li>Other signed-in users can see your name, username and role. <strong>Your email is never shown to other users.</strong></li>
           <li>Classmates see each other in the class list. They can't see each other's work, grades, attendance or reports.</li>
-          <li>Teachers see the work, attendance and reports of students in the classes they teach. Students see a report only once their teacher publishes it.</li>
+          <li>Teachers see the work, attendance, reports and merits of students in the classes they teach. Students see a report only once their teacher publishes it, and see their own merits.</li>
           <li>Messages can only be read by the two people in the chat.</li>
-          <li>The school's Schooling admin can change who is a teacher or admin.</li>
+          <li>
+            The school's Schooling admin (who uses a separate admin page) can see everyone's name, username and email,
+            make teacher accounts, change who is a teacher, set people's school and remove students from classes.
+          </li>
         </ul>
         <p>These rules are built into the database itself, not only the screens.</p>
 

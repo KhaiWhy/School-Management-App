@@ -259,6 +259,97 @@ await ok('signed-in user can call in_class', 'S1', `select public.in_class($1)`,
 const bucket = await db.query(`select allowed_mime_types from storage.buckets where id = 'class-files'`);
 check('bucket has a file-type list', (bucket.rows[0]?.allowed_mime_types ?? []).includes('application/pdf'));
 
+// ---------- Admin page (passkey) and teacher invite codes ----------
+const PK = 'correct-horse-battery-staple';
+const st = async (who, key) => (await as(who, `select public.admin_status($1) as s`, [key])).rows[0].s;
+check('admin: unset before the passkey is set', (await st('ANON', PK)) === 'unset');
+await db.query(`insert into public.admin_settings (passkey_salt, passkey_hash) values ('s4lt', encode(extensions.digest('s4lt' || $1, 'sha256'), 'hex'))`, [PK]);
+check('admin: right passkey', (await st('ANON', PK)) === 'ok');
+check('admin: wrong passkey', (await st('ANON', 'nope')) === 'wrong');
+await denied('admin: nobody reads the passkey table', 'ANON', `select * from public.admin_settings`);
+await denied('admin: nobody reads invites directly', 'S1', `select * from public.teacher_invites`);
+await denied('admin: admin_check not callable', 'ANON', `select public.admin_check($1)`, [PK]);
+const people = await ok('admin: list people', 'ANON', `select * from public.admin_people($1, '')`, [PK]);
+check('admin: people include emails', people && people.rows.some((r) => r.email === 's2@school.test'));
+await count('admin: wrong passkey lists nobody', 'ANON', `select * from public.admin_people($1, '')`, ['nope'], 0);
+const setRole = await ok('admin: set role', 'S1', `select public.admin_set_role($1, $2, 'teacher') as s`, [PK, ids.S3]);
+check('admin: role change ok', setRole && setRole.rows[0].s === 'ok');
+const r3 = await db.query(`select role from public.profiles where id = $1`, [ids.S3]);
+check('admin: S3 is now a teacher', r3.rows[0].role === 'teacher');
+const badRole = await ok('admin: no admin role', 'ANON', `select public.admin_set_role($1, $2, 'admin') as s`, [PK, ids.S3]);
+check('admin: admin role refused', badRole && badRole.rows[0].s === 'bad-role');
+const noKey = await ok('admin: set role without passkey', 'ANON', `select public.admin_set_role('nope', $1, 'student') as s`, [ids.S3]);
+check('admin: no change without passkey', noKey && noKey.rows[0].s === 'wrong');
+await denied('admin: student still cannot self-promote', 'S2', `update public.profiles set role = 'teacher' where id = $1`, [ids.S2]);
+await db.query(`delete from public.admin_attempts`);
+
+// Schools (name only), admin-made teachers, school on sign-up.
+const st1 = await ok('school: add', 'ANON', `select public.admin_save_school($1, null, 'Green Hill School') as s`, [PK]);
+check('school: added', st1 && st1.rows[0].s === 'ok');
+const dup = await ok('school: duplicate', 'ANON', `select public.admin_save_school($1, null, ' green hill school ') as s`, [PK]);
+check('school: duplicate refused', dup && dup.rows[0].s === 'duplicate');
+check('school: no add without passkey', (await as('ANON', `select public.admin_save_school('nope', null, 'X School') as s`)).rows[0].s === 'wrong');
+const schools = await ok('school: anyone reads names (sign-up list)', 'ANON', `select id, name from public.schools`);
+const schoolId = schools.rows[0].id;
+check('school: one school', schools.rows.length === 1);
+await denied('school: nobody adds directly', 'S1', `insert into public.schools (name) values ('Hack School')`);
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a1', 'new.student@school.test', $1)`, [{ full_name: 'New Student', school_id: schoolId, role: 'teacher' }]);
+const ns = await db.query(`select role, school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a1'`);
+check('signup: student with school, role ignored', ns.rows[0].role === 'student' && ns.rows[0].school_id === schoolId);
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a4', 'bad.school@school.test', $1)`, [{ school_id: 'not-a-uuid' }]);
+const bs = await db.query(`select school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a4'`);
+check('signup: bad school id ignored', bs.rows[0].school_id === null);
+const prep = await ok('teacher: prepare', 'ANON', `select public.admin_prepare_teacher($1, ' Park@School.test ', 'Mr Park', $2) as s`, [PK, schoolId]);
+check('teacher: prepared', prep && prep.rows[0].s === 'ok');
+check('teacher: bad email refused', (await as('ANON', `select public.admin_prepare_teacher($1, 'nope', '', null) as s`, [PK])).rows[0].s === 'bad-email');
+check('teacher: no prepare without passkey', (await as('ANON', `select public.admin_prepare_teacher('nope', 'a@b.co', '', null) as s`)).rows[0].s === 'wrong');
+await denied('teacher: nobody reads the teacher list', 'ANON', `select * from public.teacher_emails`);
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a2', 'park@school.test', '{}')`);
+const park = await db.query(`select role, full_name, school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a2'`);
+check('teacher: account becomes a teacher with name and school', park.rows[0].role === 'teacher' && park.rows[0].full_name === 'Mr Park' && park.rows[0].school_id === schoolId);
+const ex = await ok('teacher: existing account', 'ANON', `select public.admin_prepare_teacher($1, 's30@other.test', 'Kim', $2) as s`, [PK, schoolId]);
+check('teacher: unknown existing email is prepared', ex && ex.rows[0].s === 'ok');
+const ex2 = await ok('teacher: promote existing', 'ANON', `select public.admin_prepare_teacher($1, 'a4@school.test', '', null) as s`, [PK]);
+check('teacher: not-yet account prepared', ex2 && ex2.rows[0].s === 'ok');
+const ex3 = await ok('teacher: existing user', 'ANON', `select public.admin_prepare_teacher($1, 'bad.school@school.test', 'Ms Bad', $2) as s`, [PK, schoolId]);
+check('teacher: existing account made teacher now', ex3 && ex3.rows[0].s === 'existing');
+const bsr = await db.query(`select role, school_id from public.profiles where id = '00000000-0000-0000-0000-0000000000a4'`);
+check('teacher: existing account role and school set', bsr.rows[0].role === 'teacher' && bsr.rows[0].school_id === schoolId);
+const ppl = await ok('admin: people with school', 'ANON', `select * from public.admin_people($1, 'green hill')`, [PK]);
+check('admin: search by school name', ppl && ppl.rows.length >= 2 && ppl.rows.every((r) => r.school_name === 'Green Hill School'));
+const ss = await ok('admin: set school', 'ANON', `select public.admin_set_school($1, $2, $3) as s`, [PK, ids.S1, schoolId]);
+check('admin: school set', ss && ss.rows[0].s === 'ok');
+await ok('student changes own school', 'S2', `update public.profiles set school_id = $1 where id = $2`, [schoolId, ids.S2]);
+const sch = await ok('admin: schools list with counts', 'ANON', `select * from public.admin_schools($1)`, [PK]);
+check('admin: school counts', sch && Number(sch.rows[0].students) >= 2 && Number(sch.rows[0].teachers) >= 2);
+check('invite codes are gone', (await db.query(`select count(*)::int n from pg_proc where proname in ('check_teacher_code','admin_create_invite')`)).rows[0].n === 0);
+
+// Merits
+await ok('merit: teacher gives one', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 2, 'Helped a classmate')`, [ids.S1, classId]);
+await ok('merit: teacher gives a demerit', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, -1, 'Late homework')`, [ids.S1, classId]);
+await denied('merit: zero points refused', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 0, 'x')`, [ids.S1, classId]);
+await denied('merit: student cannot give', 'S2', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 5, 'x')`, [ids.S1, classId]);
+await denied('merit: other teacher cannot give', 'T2', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 1, 'x')`, [ids.S1, classId]);
+await denied('merit: not to a non-member', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 1, 'x')`, [ids.S3, classId]);
+await denied('merit: cannot give as someone else', 'T', `insert into public.merits (student_id, class_id, points, reason, given_by) values ($1, $2, 1, 'x', $3)`, [ids.S1, classId, ids.T2]);
+await count('merit: student sees own', 'S1', `select * from public.merits`, [], 2);
+await count('merit: classmate sees none', 'S2', `select * from public.merits`, [], 0);
+await count('merit: other teacher sees none', 'T2', `select * from public.merits`, [], 0);
+await count('merit: class teacher sees them', 'T', `select * from public.merits`, [], 2);
+await denied('merit: student cannot remove', 'S1', `delete from public.merits`);
+await ok('merit: giver removes', 'T', `delete from public.merits where points < 0`);
+await count('merit: one left', 'S1', `select * from public.merits`, [], 1);
+
+const cls2 = await ok('admin: classes', 'ANON', `select * from public.admin_classes($1)`, [PK]);
+check('admin: class with student count', cls2 && cls2.rows.some((r) => r.id === classId && Number(r.students) === 2));
+const mem = await ok('admin: class members', 'ANON', `select * from public.admin_class_members($1, $2)`, [PK, classId]);
+check('admin: members listed', mem && mem.rows.length === 2);
+const rm = await ok('admin: remove member', 'ANON', `select public.admin_remove_member($1, $2, $3) as s`, [PK, classId, ids.S2]);
+check('admin: member removed', rm && rm.rows[0].s === 'ok');
+
+for (let i = 0; i < 10; i++) await as('ANON', `select public.admin_status('wrong-${i}')`);
+check('admin: locked after 10 wrong passkeys, even the right one', (await st('ANON', PK)) === 'locked');
+
 console.log(`${pass} passed, ${failures.length} failed`);
 for (const f of failures) console.log('FAIL ' + f);
 process.exit(failures.length ? 1 : 0);

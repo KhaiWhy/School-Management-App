@@ -58,11 +58,11 @@ export default function Home() {
   const { data, loading, error } = useLoad(async () => {
     const [assignments, submissions, events, slots] = await Promise.all([
       listAssignments(),
-      staff ? Promise.resolve([]) : listSubmissions(),
+      listSubmissions(),
       listEvents(),
       listSlots(),
     ]);
-    const done = new Set(submissions.map((s) => s.assignment_id));
+    const done = new Set(staff ? [] : submissions.map((s) => s.assignment_id));
     const now = Date.now();
     return {
       slots,
@@ -70,13 +70,19 @@ export default function Home() {
         .filter((a) => a.due_at && new Date(a.due_at).getTime() > now && !done.has(a.id))
         .slice(0, 4),
       events: events.filter((e) => (e.ends_on ?? e.starts_on) >= today()).slice(0, 4),
+      // Teachers: work handed in but not graded yet, per assignment.
+      toGrade: assignments
+        .map((a) => ({ a, n: submissions.filter((s) => s.assignment_id === a.id && !s.grade).length }))
+        .filter((x) => x.n > 0)
+        .slice(0, 5),
     };
   }, [staff]);
 
   const name = user.full_name || user.username;
   const strip = data ? pickDay(data.slots) : null;
   const states = strip ? lessonStates(strip.lessons, strip.isToday) : [];
-  const todayCount = data ? data.slots.filter((s) => s.weekday === todayNumber()).length : 0;
+  const todaysLessons = data ? data.slots.filter((s) => s.weekday === todayNumber()) : [];
+  const todayCount = todaysLessons.length;
 
   return (
     <div className="page page-wide">
@@ -121,8 +127,42 @@ export default function Home() {
         <Announcements classId={null} canPost={staff} heading="School announcements" />
 
         <div className="home-side">
+          {staff ? (
+            <>
+              <section className="panel">
+                <h2 className="panel-title">To grade</h2>
+                {!data ? null : data.toGrade.length === 0 ? (
+                  <p className="empty">Nothing waiting to be graded.</p>
+                ) : (
+                  <ul className="mini-list">
+                    {data.toGrade.map(({ a, n }) => (
+                      <li key={a.id}>
+                        <Link to={`/assignments/${a.id}`}>{a.title}</Link>
+                        <small>{a.class?.name} · {n} to grade</small>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+              <section className="panel">
+                <h2 className="panel-title">Registers today</h2>
+                {!data ? null : todaysLessons.length === 0 ? (
+                  <p className="empty">No lessons today.</p>
+                ) : (
+                  <ul className="mini-list">
+                    {todaysLessons.map((l) => (
+                      <li key={l.id}>
+                        <Link to="/attendance">{l.class?.name}</Link>
+                        <small>{formatTime(l.starts_at)}–{formatTime(l.ends_at)}{l.room ? ` · Room ${l.room}` : ''}</small>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          ) : (
           <section className="panel">
-            <h2 className="panel-title">{staff ? 'Upcoming deadlines' : 'Due soon'}</h2>
+            <h2 className="panel-title">Due soon</h2>
             {!data ? null : data.dueSoon.length === 0 ? (
               <p className="empty">Nothing due.</p>
             ) : (
@@ -137,6 +177,7 @@ export default function Home() {
             )}
           </section>
 
+          )}
           <section className="panel">
             <h2 className="panel-title">Coming up</h2>
             {!data ? null : data.events.length === 0 ? (

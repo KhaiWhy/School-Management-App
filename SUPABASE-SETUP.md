@@ -36,6 +36,10 @@ Run it once only. Running it again fails with "already exists" — that's harmle
 5. And `supabase/migrations/20261103030000_username_signin.sql`: lets people sign in with
    their **username** (the database checks the password, then hands back the email; 10 wrong
    tries in 15 minutes blocks that username for a while). Safe to run again.
+6. And `supabase/migrations/20261104000000_admin_passkey.sql`: the passkey admin page
+   (see step 3). Safe to run again.
+7. And `supabase/migrations/20261104010000_schools_teachers_merits.sql`: schools, teacher
+   accounts made on the admin page, and merits. Safe to run again.
 
 What it sets up:
 
@@ -52,17 +56,36 @@ What it sets up:
 | Messages | One-to-one; only the two people in a chat can read it. Live updates. |
 | Reports | Teachers write a report per student, class and term; the student sees it only once it's **published**. |
 
-## 3. Make the first admin and teachers
-1. Open the app and **Create account** for yourself.
-2. **SQL Editor**, run (use your own email):
+## 3. Admin page and teachers
+The admin page is `/admin` on the site. It opens with a **passkey**, not with anyone's
+account.
 
-   ```sql
-   update public.profiles set role = 'admin'
-   where id = (select id from auth.users where email = 'you@example.com');
+1. Make a passkey of at least 16 characters (a password manager can generate one) and put it
+   in `.env.local`:
    ```
+   ADMIN_PASSKEY=...
+   SUPABASE_ACCESS_TOKEN=...   (Supabase → Account → Access Tokens)
+   ```
+2. Run:
+   ```bash
+   npm run admin:set-passkey
+   ```
+   It hashes the passkey on your computer and stores only the hash in Supabase. Run it
+   again any time to change the passkey. **Don't** put `ADMIN_PASSKEY` in Render: a static
+   site can't keep a secret, and the site doesn't need it.
+3. Open `/admin`, enter the passkey. From there:
+   - **People:** search everyone (with emails) and make someone a teacher or a student.
+   - **Teachers:** enter a teacher's name, email and school → the account is made straight
+     away with a one-time password (shown once). Give the teacher their email and that
+     password; they sign in on the normal page and change it on Profile. If the email
+     already has an account, it becomes a teacher.
+   - **Schools:** add or rename school names. Students pick theirs when they sign up.
+   - **Classes:** every class with its teacher, code and students; remove a student.
 
-3. Sign out and in again. You now see **People** in the menu: from there you can
-   make anyone a teacher or admin — no more SQL needed.
+Sign-up on the site is for **students** only. 10 wrong passkeys in 15 minutes locks the
+admin page for a while. Deleting an account or resetting someone's password isn't on the
+admin page (Supabase only allows that with its secret key): do it in Supabase →
+**Authentication** → **Users**.
 
 ## 4. Connect the app
 The app reads exactly **two settings**. From **Project Settings** → **API Keys** (or the
@@ -87,7 +110,7 @@ npm run dev
 **On Render:** add the same two keys under **Environment** (see DEPLOY.md).
 
 ## 5. Check it works
-1. Create two accounts (one in a private window). Make one a teacher on **People**.
+1. On `/admin`: add a school, then make a teacher account. Sign up a student (in a private window) and pick the school.
 2. Teacher: **Classes** → create a class → note the code.
 3. Student: **Classes** → join with the code. The class appears on the right.
 4. Teacher: post in the class Stream, set an assignment, add a material, take attendance.
@@ -97,7 +120,7 @@ npm run dev
 
 ## Testing the rules without Supabase
 `npm run test:db` runs the database file on a local copy of Postgres and checks
-113 rules (who can read and change what, and username sign-in). Run it after changing the SQL.
+182 rules (who can read and change what, username sign-in, the admin page, schools, teachers and merits). Run it after changing the SQL.
 
 ## Changing the database later
 Add a new file in `supabase/migrations/` (e.g. `20261201000000_add_departments.sql`),

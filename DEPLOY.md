@@ -8,7 +8,9 @@ database protects the data):
 | `SUPABASE_URL` | Project URL, e.g. `https://abcd1234.supabase.co` |
 | `SUPABASE_PUBLISHABLE_KEY` | the **publishable** key (`sb_publishable_…`) |
 
-No secret keys anywhere: username sign-in is checked inside the database.
+No secret keys anywhere: username sign-in and the `/admin` passkey are checked inside the
+database. **Don't add `ADMIN_PASSKEY` to Render** — a static site can't keep a secret; set
+the passkey with `npm run admin:set-passkey` instead (SUPABASE-SETUP.md step 3).
 
 Before you start: Supabase is set up (SUPABASE-SETUP.md, all migrations run), the code is
 pushed to `KhaiWhy/School-Management-App` on `main`, and `npm run build` works on your
@@ -51,6 +53,7 @@ repo → it asks for the two keys → **Apply**.
 - Sign in with your **username** and with your **email** — both work.
 - Open `/timetable` directly and refresh: it loads.
 - `/privacy` opens without signing in.
+- `/admin` shows the passkey screen.
 
 ### After the first deploy
 In Supabase → **Authentication** → **URL Configuration**: set **Site URL** to the Render

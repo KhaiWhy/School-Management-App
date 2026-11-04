@@ -1,24 +1,24 @@
 /* Schooling — styles.
-   Colours are the Figma "Schooling tokens" (palette A · Classroom Blue), light and dark.
+   Colours are the Figma "Schooling tokens" (Khai's sage greens #5C7057 + #89A482), light and dark.
    Fonts: Plus Jakarta Sans (headings) + Inter (body), loaded in index.html. */
 
 :root,
 [data-theme='light'] {
-  --bg: #f6f8fb;
+  --bg: #f6f7f4;
   --surface: #ffffff;
-  --surface-2: #eef2f7;
-  --border: #d9e0ea;
-  --field-border: #7d8aa0;
-  --text: #0f172a;
-  --muted: #526079;
-  --primary: #1d5fd1;
-  --primary-hover: #174dab;
+  --surface-2: #eef1ec;
+  --border: #d8ded5;
+  --field-border: #7f8b7b;
+  --text: #172017;
+  --muted: #56604f;
+  --primary: #5c7057;
+  --primary-hover: #4c5e48;
   --on-primary: #ffffff;
-  --primary-soft: #e5eefc;
-  --on-soft: #1747a6;
-  --accent: #0b7f91;
-  --accent-soft: #e2f4f6;
-  --accent-ink: #08697a;
+  --primary-soft: #e9efe7;
+  --on-soft: #3e4e3b;
+  --accent: #89a482;
+  --accent-soft: #eef4ec;
+  --accent-ink: #4b6745;
   --success: #116932;
   --success-bg: #e7f6ec;
   --warning: #b45309;
@@ -30,21 +30,21 @@
 }
 
 [data-theme='dark'] {
-  --bg: #0b1220;
-  --surface: #121a2b;
-  --surface-2: #1a2438;
-  --border: #2a3650;
-  --field-border: #61729a;
-  --text: #e6ebf3;
-  --muted: #9aa7bd;
-  --primary: #7aa7ff;
-  --primary-hover: #9bbdff;
-  --on-primary: #0b1220;
-  --primary-soft: #1b2a4a;
-  --on-soft: #b9cfff;
-  --accent: #3cc6d9;
-  --accent-soft: #123038;
-  --accent-ink: #3cc6d9;
+  --bg: #0f1310;
+  --surface: #161c17;
+  --surface-2: #1e2620;
+  --border: #2f3b31;
+  --field-border: #6e7d6c;
+  --text: #e7ece5;
+  --muted: #a3ae9f;
+  --primary: #89a482;
+  --primary-hover: #9db696;
+  --on-primary: #0f1310;
+  --primary-soft: #243026;
+  --on-soft: #c6d6c1;
+  --accent: #89a482;
+  --accent-soft: #1f2b21;
+  --accent-ink: #a9c2a2;
   --success: #4ade80;
   --success-bg: #12301f;
   --warning: #fbbf24;
@@ -481,7 +481,7 @@ select {
   padding: 7px;
   border-radius: var(--radius);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .classroom-text {
@@ -890,6 +890,12 @@ textarea {
 
 .tone-primary {
   color: var(--text);
+}
+
+.merit-points {
+  flex: none;
+  min-width: 2.25em;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-line {
@@ -2446,4 +2452,72 @@ button.more-link:hover {
   gap: 8px;
   padding-left: 20px;
   list-style: disc;
+}
+
+/* ---------- Sign-up teacher code ---------- */
+
+.teacher-code summary {
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.teacher-code[open] summary {
+  margin-bottom: 10px;
+}
+
+/* ---------- Admin (passkey page) ---------- */
+
+.admin {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.admin-tag {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.admin-topbar {
+  min-height: var(--topbar-h);
+}
+
+.admin-main {
+  max-width: 1040px;
+  padding: 24px 16px 48px;
+  margin: 0 auto;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.new-code {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.new-code-value {
+  margin: 8px 0 12px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.code-hint {
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: 0.06em;
+}
+
+.admin-class .people-list {
+  margin-top: 8px;
 }

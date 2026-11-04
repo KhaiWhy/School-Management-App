@@ -7,7 +7,26 @@ export interface Profile {
   full_name: string;
   username: string;
   role: Role;
+  school_id: string | null;
   created_at: string;
+}
+
+export interface School {
+  id: string;
+  name: string;
+}
+
+export interface Merit {
+  id: string;
+  student_id: string;
+  class_id: string | null;
+  points: number;
+  reason: string;
+  given_by: string;
+  created_at: string;
+  class?: { name: string } | null;
+  giver?: { full_name: string } | null;
+  student?: { full_name: string; username: string } | null;
 }
 
 export type PersonRef = Pick<Profile, 'id' | 'full_name' | 'username'>;

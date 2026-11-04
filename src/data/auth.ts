@@ -1,14 +1,24 @@
 import { supabase, unwrap } from '../lib/supabase';
 import type { Profile } from './types';
 
-export async function signUp({ fullName, email, password }: { fullName: string; email: string; password: string }) {
-  const data = unwrap(
-    await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin },
-    }),
-  );
+// Sign-up on the site is for students. Teacher accounts are made on the admin page.
+export async function signUp({
+  fullName,
+  email,
+  password,
+  schoolId,
+}: {
+  fullName: string;
+  email: string;
+  password: string;
+  schoolId?: string;
+}) {
+  const result = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName, school_id: schoolId || undefined }, emailRedirectTo: window.location.origin },
+  });
+  const data = unwrap(result);
   // With "Confirm email" off in Supabase there is a session straight away.
   return { signedIn: Boolean(data.session) };
 }

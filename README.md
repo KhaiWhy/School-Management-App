@@ -4,8 +4,8 @@ App that digitizes school's management resources all in one app, ranging from as
 ## What it does
 - **Students:** school and class announcements, join classes with a code, assignments
   (hand in text or files, see grades and feedback), class materials, timetable, school
-  calendar, activities (CCAs), direct messages, own attendance and published reports.
-- **Teachers:** everything above, plus create classes, post to a class, set and grade
+  calendar, activities (CCAs), direct messages, own attendance, published reports and merits.
+- **Teachers:** everything above, plus create classes, give merits and demerits, post to a class, set and grade
   assignments, upload materials, add lessons and events, run activities, take the
   register and write term reports.
 - **Admins:** make people teachers or admins (People page).
@@ -30,7 +30,8 @@ Open http://localhost:5173. The app reads exactly two settings, `SUPABASE_URL` a
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm start` | Serve `dist/` with Node (only for a Render Web Service; a Static Site doesn't need it) |
 | `npm run typecheck` | Type-check only |
-| `npm run test:db` | Check all 113 database rules locally |
+| `npm run test:db` | Check all 182 database rules locally |
+| `npm run admin:set-passkey` | Set or change the `/admin` passkey (reads `ADMIN_PASSKEY` from `.env.local`; stores only a hash) |
 
 Deploying: [DEPLOY.md](DEPLOY.md).
 
@@ -41,6 +42,8 @@ Deploying: [DEPLOY.md](DEPLOY.md).
   change what (see `supabase/migrations/`).
 - **Sign-in:** email or username + password. For a username, a database function checks the
   password and only then returns the email, so no server secret is needed.
+- **Admin:** `/admin`, opened with a passkey (not an account): people, roles and schools,
+  teacher accounts (made there; sign-up is for students), classes.
 - **Hosting:** a Render Static Site (`server.mjs` is an optional Node server for a Web Service).
 
 ## Where things are
@@ -60,6 +63,8 @@ Deploying: [DEPLOY.md](DEPLOY.md).
 | `supabase/migrations/` | The database: tables, rules, storage |
 | `supabase/tests/` | Database rule checks (`npm run test:db`) |
 | `DESIGN.md` | Colours, type, layout and the reasons behind them (Figma file: "WDS — Khai — School-Management-App") |
+| `src/pages/Admin.tsx`, `src/data/admin.ts` | The passkey admin page |
+| `scripts/set-admin-passkey.mjs` | Sets the admin passkey hash in Supabase |
 | `src/pages/Privacy.tsx` | Public privacy page; keep it matching what the app stores and loads |
 | `server.mjs` | Optional Node server (Render Web Service); serves the built app, no secrets |
 | `legacy/` | The original HTML/CSS version, kept for reference |

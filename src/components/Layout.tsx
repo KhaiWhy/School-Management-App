@@ -41,9 +41,9 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/attendance', label: 'Attendance', icon: 'attendance' },
       { to: '/reports', label: 'Reports', icon: 'report' },
+      { to: '/merits', label: 'Merits', icon: 'merit' },
     ],
   },
-  { title: 'Admin', items: [{ to: '/people', label: 'People', icon: 'people', roles: ['admin'] }] },
 ];
 
 // Phone bottom bar: the five places people go most. Everything else is under More.

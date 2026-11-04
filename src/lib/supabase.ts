@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 // The only two settings: SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY, from .env.local (on your
 // computer) or Render → Environment (live); vite.config.ts puts them in. The publishable key
 // is meant to be public; Row Level Security in the database protects the data.
-const url = import.meta.env.SUPABASE_URL as string;
-const publishableKey = import.meta.env.SUPABASE_PUBLISHABLE_KEY as string;
+export const url = import.meta.env.SUPABASE_URL as string;
+export const publishableKey = import.meta.env.SUPABASE_PUBLISHABLE_KEY as string;
 
 export const isConfigured = Boolean(url && publishableKey);
 

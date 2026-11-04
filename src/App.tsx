@@ -3,6 +3,7 @@ import { RequireAuth } from './auth/AuthContext';
 import Layout from './components/Layout';
 import { isConfigured } from './lib/supabase';
 import Activities from './pages/Activities';
+import Admin from './pages/Admin';
 import AssignmentDetail from './pages/AssignmentDetail';
 import Assignments from './pages/Assignments';
 import Attendance from './pages/Attendance';
@@ -12,10 +13,10 @@ import Classroom from './pages/Classroom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Materials from './pages/Materials';
+import Merits from './pages/Merits';
 import Messages from './pages/Messages';
 import More from './pages/More';
 import NotFound from './pages/NotFound';
-import People from './pages/People';
 import Privacy from './pages/Privacy';
 import Profile from './pages/Profile';
 import Reports from './pages/Reports';
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/admin" element={<Admin />} />
       <Route
         element={
           <RequireAuth>
@@ -51,12 +53,9 @@ export default function App() {
         <Route path="messages/:userId" element={<Messages />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="merits" element={<Merits />} />
         <Route path="profile" element={<Profile />} />
         <Route path="more" element={<More />} />
-        <Route
-          path="people"
-          element={<RequireAuth roles={['admin']}><People /></RequireAuth>}
-        />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

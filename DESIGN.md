@@ -4,18 +4,20 @@ Source of truth: Figma "WDS — Khai — School-Management-App" → page 06 Hi-f
 (colour variables "Schooling tokens", Light + Dark modes; components; screens).
 In code: the CSS variables at the top of `src/styles.css` (same names, kebab-case).
 
-## Colour — palette A · Classroom Blue
-Evolves Khai's own blue (#007bff) and cyan from the first HTML version.
+## Colour — Khai's sage greens
+Khai picked #5C7057 and #89A482 (4 Nov 2026) to replace the first blue; white stays.
 
 | Role | Light | Dark | Use |
 |---|---|---|---|
-| `--primary` | #1D5FD1 | #7AA7FF | buttons, links, active tab, focus |
-| `--accent` / `--accent-ink` | #0B7F91 / #08697A | #3CC6D9 | time only: the Now / Next lesson, today's column, class markers (`--accent-ink` for text on the accent tint) |
-| `--bg` / `--surface` / `--surface-2` | #F6F8FB / #FFF / #EEF2F7 | #0B1220 / #121A2B / #1A2438 | page / cards / fills |
-| `--text` / `--muted` | #0F172A / #526079 | #E6EBF3 / #9AA7BD | all text (both pass AA on every surface) |
+| `--primary` | **#5C7057** | **#89A482** | buttons, links, active tab, focus |
+| `--accent` | **#89A482** | #89A482 | time and class markers: the Now / Next lesson, today's column, dots, tints |
+| `--accent-ink` | #4B6745 | #A9C2A2 | any text or icon in the accent colour (#89A482 is only 2.7:1 on white, so it is never used for text) |
+| `--bg` / `--surface` / `--surface-2` | #F6F7F4 / #FFF / #EEF1EC | #0F1310 / #161C17 / #1E2620 | page / cards / fills |
+| `--text` / `--muted` | #172017 / #56604F | #E7ECE5 / #A3AE9F | all text (both pass AA on every surface) |
+| `--field-border` | #7F8B7B | #6E7D6C | input edges (3:1) |
 | success / warning / danger | green / amber / red + soft backgrounds | lighter versions | status only (handed in, late, absent) |
 
-Rules: blue means "you can act here" (buttons, links, the selected menu item) and is
+Rules: the primary green means "you can act here" (buttons, links, the selected menu item) and is
 not used for labels or numbers; one solid primary button per area; the accent marks time
 ("Now", "Next", today) and nothing else; badges that aren't a status are grey. Dark mode has no shadows and uses the
 soft primary for big blocks (class banner) so nothing glares.
