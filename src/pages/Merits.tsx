@@ -55,7 +55,9 @@ function MyMerits() {
       ) : (
         <>
           <p className="summary-line">
-            <strong className={total >= 0 ? 'tone-good' : 'tone-bad'}>{total >= 0 ? `+${total}` : `−${-total}`} in total</strong>
+            <strong className={total > 0 ? 'tone-good' : total < 0 ? 'tone-bad' : undefined}>
+              {total > 0 ? `+${total}` : total < 0 ? `−${-total}` : '0'} in total
+            </strong>
             <span aria-hidden="true"> · </span>
             <span>{given} merit {given === 1 ? 'point' : 'points'}</span>
             <span aria-hidden="true"> · </span>
