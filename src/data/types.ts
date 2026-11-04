@@ -22,8 +22,10 @@ export interface Merit {
   class_id: string | null;
   points: number;
   reason: string;
+  details: string | null;
   given_by: string;
   created_at: string;
+  updated_at: string | null;
   class?: { name: string } | null;
   giver?: { full_name: string } | null;
   student?: { full_name: string; username: string } | null;

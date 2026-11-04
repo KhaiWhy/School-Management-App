@@ -898,6 +898,30 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
+.merit-details {
+  color: var(--text);
+  font-size: 14px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.row-actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .merit-row {
+    flex-wrap: wrap;
+  }
+
+  .merit-row .row-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 .summary-line {
   margin: -4px 0 16px;
   color: var(--muted);

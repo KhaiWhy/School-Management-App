@@ -9,14 +9,25 @@ export async function listMerits(): Promise<Merit[]> {
   return unwrap(await supabase.from('merits').select(FIELDS).order('created_at', { ascending: false }).limit(300));
 }
 
-export async function giveMerit(input: { studentId: string; classId: string; points: number; reason: string }) {
+export async function giveMerit(input: { studentId: string; classId: string; points: number; reason: string; details?: string }) {
   unwrap(
     await supabase.from('merits').insert({
       student_id: input.studentId,
       class_id: input.classId,
       points: input.points,
       reason: input.reason.trim(),
+      details: input.details?.trim() || null,
     }),
+  );
+}
+
+// Only the teacher who gave it can change it, and only these three fields (database rule).
+export async function updateMerit(id: string, input: { points: number; reason: string; details: string }) {
+  unwrap(
+    await supabase
+      .from('merits')
+      .update({ points: input.points, reason: input.reason.trim(), details: input.details.trim() || null })
+      .eq('id', id),
   );
 }
 

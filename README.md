@@ -30,7 +30,7 @@ Open http://localhost:5173. The app reads exactly two settings, `SUPABASE_URL` a
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm start` | Serve `dist/` with Node (only for a Render Web Service; a Static Site doesn't need it) |
 | `npm run typecheck` | Type-check only |
-| `npm run test:db` | Check all 182 database rules locally |
+| `npm run test:db` | Check all 200 database rules locally |
 | `npm run admin:set-passkey` | Set or change the `/admin` passkey (reads `ADMIN_PASSKEY` from `.env.local`; stores only a hash) |
 
 Deploying: [DEPLOY.md](DEPLOY.md).

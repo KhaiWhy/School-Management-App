@@ -40,6 +40,9 @@ Run it once only. Running it again fails with "already exists" — that's harmle
    (see step 3). Safe to run again.
 7. And `supabase/migrations/20261104010000_schools_teachers_merits.sql`: schools, teacher
    accounts made on the admin page, and merits. Safe to run again.
+8. And `supabase/migrations/20261105000000_merits_edit_same_school.sql`: students only join
+   classes (and get merits) at their own school; teachers can edit the merits they gave and add
+   optional details. Safe to run again.
 
 What it sets up:
 
@@ -120,7 +123,7 @@ npm run dev
 
 ## Testing the rules without Supabase
 `npm run test:db` runs the database file on a local copy of Postgres and checks
-182 rules (who can read and change what, username sign-in, the admin page, schools, teachers and merits). Run it after changing the SQL.
+200 rules (who can read and change what, username sign-in, the admin page, schools, teachers, merits and the same-school rule). Run it after changing the SQL.
 
 ## Changing the database later
 Add a new file in `supabase/migrations/` (e.g. `20261201000000_add_departments.sql`),

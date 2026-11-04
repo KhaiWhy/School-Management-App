@@ -340,6 +340,37 @@ await denied('merit: student cannot remove', 'S1', `delete from public.merits`);
 await ok('merit: giver removes', 'T', `delete from public.merits where points < 0`);
 await count('merit: one left', 'S1', `select * from public.merits`, [], 1);
 
+// Merits: edit by the giver only, optional details.
+await ok('merit edit: giver changes points, reason, details', 'T',
+  `update public.merits set points = 3, reason = 'Helped two classmates', details = '  Stayed after class to explain fractions.  ' where student_id = $1`, [ids.S1]);
+const edited = await db.query(`select points, reason, details, updated_at from public.merits where student_id = $1`, [ids.S1]);
+check('merit edit: saved, details trimmed, edit time set', edited.rows[0].points === 3 && edited.rows[0].details === 'Stayed after class to explain fractions.' && edited.rows[0].updated_at !== null);
+await ok('merit edit: empty details become none', 'T', `update public.merits set details = '   ' where student_id = $1`, [ids.S1]);
+check('merit edit: blank details cleared', (await db.query(`select details from public.merits where student_id = $1`, [ids.S1])).rows[0].details === null);
+await denied('merit edit: other teacher cannot', 'T2', `update public.merits set reason = 'x'`);
+await denied('merit edit: student cannot', 'S1', `update public.merits set points = 10`);
+await denied('merit edit: cannot move it to another student', 'T', `update public.merits set student_id = $1`, [ids.S2]);
+await denied('merit edit: cannot change who gave it', 'T', `update public.merits set given_by = $1`, [ids.T2]);
+await denied('merit edit: zero points refused', 'T', `update public.merits set points = 0`);
+await denied('merit edit: details over 1000 characters refused', 'T', `update public.merits set details = repeat('a', 1001)`);
+await ok('merit: give with details', 'T', `insert into public.merits (student_id, class_id, points, reason, details) values ($1, $2, 1, 'Tidy work', 'Neat diagrams all week.')`, [ids.S1, classId]);
+
+// Same school: join, teacher add and merits.
+const schoolB = (await db.query(`insert into public.schools (name) values ('Riverside Academy') returning id`)).rows[0].id;
+await db.query(`update public.profiles set school_id = $1 where id = any($2)`, [schoolId, [ids.T, ids.S1, ids.S2]]);
+await db.query(`update public.profiles set school_id = $1 where id = $2`, [schoolB, ids.S3]);
+await denied('same school: student from another school cannot join', 'S3', `select public.join_class($1)`, [code]);
+await denied('same school: teacher cannot add a student from another school', 'T', `insert into public.class_members (class_id, user_id) values ($1, $2)`, [classId, ids.S3]);
+await ok('same school: same-school student gets a merit', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 1, 'Good question')`, [ids.S2, classId]);
+await db.query(`update public.profiles set school_id = $1 where id = $2`, [schoolB, ids.S2]);
+await denied('same school: no merit once the student is at another school', 'T', `insert into public.merits (student_id, class_id, points, reason) values ($1, $2, 1, 'x')`, [ids.S2, classId]);
+await db.query(`update public.profiles set school_id = null where id = $1`, [ids.S3]);
+await ok('same school: no school set yet is allowed to join', 'S3', `select public.join_class($1)`, [code]);
+await ok('same school: leaves again', 'S3', `delete from public.class_members where class_id = $1 and user_id = $2`, [classId, ids.S3]);
+check('same school: not callable signed out', !!(await as('ANON', `select public.same_school($1, $2)`, [ids.T, ids.S1]).then(() => false, () => true)));
+await db.query(`update public.profiles set school_id = null where id = any($1)`, [[ids.T, ids.S1, ids.S2, ids.S3]]);
+await db.query(`delete from public.merits where student_id = $1`, [ids.S2]);
+
 const cls2 = await ok('admin: classes', 'ANON', `select * from public.admin_classes($1)`, [PK]);
 check('admin: class with student count', cls2 && cls2.rows.some((r) => r.id === classId && Number(r.students) === 2));
 const mem = await ok('admin: class members', 'ANON', `select * from public.admin_class_members($1, $2)`, [PK, classId]);

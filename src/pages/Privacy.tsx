@@ -15,7 +15,7 @@ export default function Privacy() {
           <li><strong>Your account:</strong> full name, email, password (stored scrambled; nobody can read it), username, role (student or teacher) and the school you chose.</li>
           <li><strong>Your classes:</strong> which classes you teach or have joined.</li>
           <li><strong>School work:</strong> announcements, assignments, the answers and files you hand in, grades and feedback, class materials.</li>
-          <li><strong>Records:</strong> attendance marks, term reports, and merits or demerits with their reason.</li>
+          <li><strong>Records:</strong> attendance marks, term reports, and merits or demerits with their reason and any details the teacher adds.</li>
           <li><strong>Other:</strong> your messages, the activities you join, timetable lessons and calendar events.</li>
         </ul>
 
