@@ -5,7 +5,7 @@ export default function NotFound() {
     <section className="page">
       <h1 className="page-title">Page not found</h1>
       <p className="empty">
-        That page doesn't exist. <Link to="/">Back to home</Link>
+        That page doesn't exist. <Link to="/">Back to homepage</Link>
       </p>
     </section>
   );
