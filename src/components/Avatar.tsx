@@ -7,6 +7,11 @@ export function initials(name: string) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
 
+async function handleSignOut() {
+    await signOut();
+    navigate('/login');
+  }
+
 export default function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   return (
     <span className="avatar" style={{ width: size, height: size, fontSize: Math.max(12, size * 0.34) }} aria-hidden="true">
