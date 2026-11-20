@@ -7,23 +7,10 @@ export function initials(name: string) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
 
-export default function Layout() {
-  const { signOut } = useAuth();
-  const user = useUser();
-  const navigate = useNavigate();
-
-async function handleSignOut() {
-    await signOut();
-    navigate('/login');
-  }
-
 export default function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   return (
     <span className="avatar" style={{ width: size, height: size, fontSize: Math.max(12, size * 0.34) }} aria-hidden="true">
       {initials(name)}
-      <button type="button" className="icon-button" onClick={handleSignOut} aria-label="Sign out" title="Sign out">
-        <Icon name="logout" size={18} />
-      </button>
     </span>
     
   );
