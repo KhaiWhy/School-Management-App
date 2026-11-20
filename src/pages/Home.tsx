@@ -161,7 +161,7 @@ export default function Home() {
             </>
           ) : (
           <section className="panel">
-            <h2 className="panel-title">Due soon</h2>
+            <h2 className="panel-title">Assignments due soon</h2>
             {!data ? null : data.dueSoon.length === 0 ? (
               <p className="empty">Nothing due.</p>
             ) : (
@@ -178,7 +178,7 @@ export default function Home() {
 
           )}
           <section className="panel">
-            <h2 className="panel-title">Coming up</h2>
+            <h2 className="panel-title">Events coming up</h2>
             {!data ? null : data.events.length === 0 ? (
               <p className="empty">No events on the calendar.</p>
             ) : (
