@@ -1,5 +1,3 @@
-import Icon from "./Icon";
-
 // Initials in a soft circle ("Ms Lee" → "ML"). Used everywhere a person appears.
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
