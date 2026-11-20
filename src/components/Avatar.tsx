@@ -1,3 +1,5 @@
+import Icon from "./Icon";
+
 // Initials in a soft circle ("Ms Lee" → "ML"). Used everywhere a person appears.
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -9,6 +11,10 @@ export default function Avatar({ name, size = 36 }: { name: string; size?: numbe
   return (
     <span className="avatar" style={{ width: size, height: size, fontSize: Math.max(12, size * 0.34) }} aria-hidden="true">
       {initials(name)}
+      <button type="button" className="icon-button" onClick={handleSignOut} aria-label="Sign out" title="Sign out">
+        <Icon name="logout" size={18} />
+      </button>
     </span>
+    
   );
 }
