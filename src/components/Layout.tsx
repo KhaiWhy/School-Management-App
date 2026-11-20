@@ -22,9 +22,9 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: 'Learn',
     items: [
       { to: '/', label: 'Home', icon: 'home', end: true },
-      { to: '/classes', label: 'Classes', icon: 'classroom' },
+      
       { to: '/assignments', label: 'Assignments', icon: 'assignment' },
-      { to: '/materials', label: 'Materials', icon: 'material' },
+    
     ],
   },
   {
