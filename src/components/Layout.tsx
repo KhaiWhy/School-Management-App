@@ -146,16 +146,11 @@ export default function Layout() {
             ))}
           </div>
           <div className="rail-me">
-            <Link to="/profile" className="rail-me-link">
               <Avatar name={name} size={32} />
               <span className="rail-me-text">
                 <strong>{name}</strong>
                 <small>{ROLE_LABEL[user.role]}</small>
               </span>
-            </Link>
-            <button type="button" className="icon-button" onClick={handleSignOut} aria-label="Sign out" title="Sign out">
-              <Icon name="logout" size={18} />
-            </button>
           </div>
         </nav>
 
