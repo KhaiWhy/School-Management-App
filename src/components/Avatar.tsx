@@ -7,6 +7,11 @@ export function initials(name: string) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
 
+export default function Layout() {
+  const { signOut } = useAuth();
+  const user = useUser();
+  const navigate = useNavigate();
+
 async function handleSignOut() {
     await signOut();
     navigate('/login');
