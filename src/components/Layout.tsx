@@ -116,6 +116,9 @@ export default function Layout() {
             <Link to="/profile" className="topbar-avatar" aria-label={`Profile: ${name}`}>
               <Avatar name={name} />
             </Link>
+            <button type="button" className="icon-button" onClick={handleSignOut} aria-label="Sign out" title="Sign out">
+              <Icon name="logout" size={18} />
+            </button>
           </div>
         </header>
 
