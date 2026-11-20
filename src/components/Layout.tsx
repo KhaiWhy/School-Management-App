@@ -112,7 +112,6 @@ export default function Layout() {
           <Link to="/" className="brand">Schooling</Link>
           <div className="topbar-user">
             <ThemeToggle />
-            <span className="badge badge-info role-badge">{ROLE_LABEL[user.role]}</span>
             <Link to="/profile" className="topbar-avatar" aria-label={`Profile: ${name}`}>
               <Avatar name={name} />
             </Link>
