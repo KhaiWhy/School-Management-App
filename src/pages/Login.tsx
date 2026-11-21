@@ -135,7 +135,7 @@ export default function Login() {
             <label className="field">
               Your school
               <select name="schoolId" required defaultValue="">
-                <option value="" disabled>Choose your school</option>
+                <option value="">Choose your school</option>
                 {schools.map((sc) => (
                   <option key={sc.id} value={sc.id}>{sc.name}</option>
                 ))}
