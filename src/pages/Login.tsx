@@ -20,7 +20,7 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>('signin');
   const [notice, setNotice] = useState<string | null>(null);
   const action = useAction();
-  const { data: schools = [] } = useLoad(listSchools, []);
+  /*const { data: schools = [] } = useLoad(listSchools, []);*/
 
   // Signed in (also right after signing in): go where you were heading.
 
