@@ -131,7 +131,7 @@ export default function Login() {
             <input name="email" type="email" autoComplete="email" required />
           </label>
           <PasswordField label="Password" name="password" autoComplete="new-password" minLength={8} hint="At least 8 characters." />
-          {schools.length > 0 && (
+          {schools.length >= 0 && (
             <label className="field">
               Your school
               <select name="schoolId" required defaultValue="">
